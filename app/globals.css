@@ -1,26 +1,33 @@
+@import "@fontsource/lexend/400.css";
+@import "@fontsource/lexend/500.css";
+@import "@fontsource/lexend/600.css";
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #ece6db;
+  --foreground: #3a1162;
+  --brand-primary: #3a1162;
+  --brand-lilac: #d4b2e7;
+  --brand-pink: #feb6d3;
+  --brand-coral: #e9573b;
+  --brand-cream: #ece6db;
+  --brand-ink: #241036;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: "Lexend", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Lexend", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+::selection {
+  background: rgba(212, 178, 231, 0.55);
+  color: var(--brand-primary);
 }
