@@ -16,8 +16,8 @@ export function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-[1.5rem] border border-[var(--brand-primary)]/10 bg-white shadow-[0_18px_40px_rgba(58,17,98,0.06)]">
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--brand-primary)]/8 bg-[linear-gradient(90deg,_rgba(212,178,231,0.14)_0%,_rgba(255,255,255,0.88)_100%)] px-6 py-5">
+    <section className="overflow-hidden rounded-[1.5rem] bg-[rgba(255,255,255,0.82)] shadow-[0_16px_34px_rgba(58,17,98,0.05)] backdrop-blur-sm">
+      <div className="flex flex-wrap items-start justify-between gap-4 bg-[linear-gradient(90deg,_rgba(212,178,231,0.1)_0%,_rgba(255,255,255,0.72)_100%)] px-6 py-5">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-[var(--brand-primary)]/42">
             Sektion
@@ -47,16 +47,16 @@ export function StatCard({
 }) {
   const accents = {
     amber:
-      "border-[var(--brand-pink)] bg-[linear-gradient(180deg,_rgba(254,182,211,0.22)_0%,_rgba(255,255,255,0.98)_100%)]",
+      "bg-[linear-gradient(180deg,_rgba(254,182,211,0.18)_0%,_rgba(255,255,255,0.98)_100%)]",
     dark:
-      "border-[var(--brand-primary)]/10 bg-[linear-gradient(180deg,_rgba(58,17,98,0.96)_0%,_rgba(36,16,54,0.96)_100%)] text-white",
+      "bg-[linear-gradient(180deg,_rgba(58,17,98,0.96)_0%,_rgba(36,16,54,0.96)_100%)] text-white",
     soft:
-      "border-[var(--brand-lilac)] bg-[linear-gradient(180deg,_rgba(212,178,231,0.18)_0%,_rgba(255,255,255,0.98)_100%)]",
+      "bg-[linear-gradient(180deg,_rgba(212,178,231,0.14)_0%,_rgba(255,255,255,0.98)_100%)]",
   } as const;
 
   return (
     <article
-      className={`rounded-[1.35rem] border p-5 shadow-[0_16px_30px_rgba(0,0,0,0.04)] ${accents[accent]}`}
+      className={`rounded-[1.35rem] p-5 shadow-[0_14px_28px_rgba(0,0,0,0.04)] ${accents[accent]}`}
     >
       <p className="text-xs font-medium uppercase tracking-[0.25em] text-[var(--brand-primary)]/45">
         {label}
@@ -79,7 +79,7 @@ export function PageIntro({
   meta?: ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-[1.7rem] border border-[var(--brand-primary)]/10 bg-[radial-gradient(circle_at_top_left,_rgba(212,178,231,0.5),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(233,87,59,0.16),_transparent_24%),linear-gradient(180deg,_rgba(255,255,255,0.95)_0%,_rgba(248,242,250,0.96)_100%)] shadow-[0_18px_44px_rgba(58,17,98,0.07)]">
+    <div className="overflow-hidden rounded-[1.7rem] bg-[radial-gradient(circle_at_top_left,_rgba(212,178,231,0.5),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(233,87,59,0.16),_transparent_24%),linear-gradient(180deg,_rgba(255,255,255,0.95)_0%,_rgba(248,242,250,0.96)_100%)] shadow-[0_18px_44px_rgba(58,17,98,0.06)]">
       <div className="flex flex-wrap items-start justify-between gap-6 px-8 py-8">
         <div className="max-w-3xl">
           <p className="text-sm font-medium uppercase tracking-[0.3em] text-[var(--brand-primary)]/45">
@@ -98,7 +98,7 @@ export function PageIntro({
 
 export function Kicker({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-black/50">
+    <span className="inline-flex rounded-full bg-white/72 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-black/50 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)]">
       
       {children}
     </span>
@@ -114,15 +114,15 @@ export function StatusPill({
 }) {
   const tones = {
     neutral:
-      "border-[var(--brand-primary)]/10 bg-[var(--brand-primary)]/[0.04] text-[var(--brand-primary)]/65",
-    amber: "border-[var(--brand-pink)] bg-[var(--brand-pink)]/30 text-[var(--brand-primary)]",
-    green: "border-[#cfe7d1] bg-[#edf8ee] text-[#2d6a33]",
-    dark: "border-[var(--brand-primary)]/10 bg-[var(--brand-primary)] text-white",
+      "bg-[var(--brand-primary)]/[0.05] text-[var(--brand-primary)]/65 shadow-[inset_0_0_0_1px_rgba(58,17,98,0.05)]",
+    amber: "bg-[var(--brand-pink)]/26 text-[var(--brand-primary)] shadow-[inset_0_0_0_1px_rgba(254,182,211,0.32)]",
+    green: "bg-[#edf8ee] text-[#2d6a33] shadow-[inset_0_0_0_1px_rgba(45,106,51,0.08)]",
+    dark: "bg-[var(--brand-primary)] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]",
   } as const;
 
   return (
     <span
-      className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${tones[tone]}`}
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${tones[tone]}`}
     >
       {children}
     </span>
@@ -162,10 +162,10 @@ export function ListItem({
 }) {
   return (
     <article
-      className={`rounded-[1.35rem] border p-5 ${
+      className={`rounded-[1.35rem] p-5 shadow-[0_10px_24px_rgba(58,17,98,0.035)] ${
         tone === "amber"
-          ? "border-[var(--brand-pink)] bg-[linear-gradient(180deg,_rgba(254,182,211,0.15)_0%,_rgba(255,255,255,0.98)_100%)]"
-          : "border-[var(--brand-primary)]/10 bg-[rgba(255,255,255,0.76)]"
+          ? "bg-[linear-gradient(180deg,_rgba(254,182,211,0.12)_0%,_rgba(255,255,255,0.98)_100%)]"
+          : "bg-[rgba(255,255,255,0.78)]"
       }`}
     >
       {children}
@@ -190,7 +190,7 @@ export function Field({
     <label className="block">
       <span className="mb-2 block text-sm font-medium text-[var(--brand-primary)]/72">{label}</span>
       <input
-        className="w-full rounded-2xl border border-[var(--brand-primary)]/10 bg-white/80 px-4 py-3 text-sm text-[var(--brand-primary)] outline-none transition placeholder:text-[var(--brand-primary)]/35 focus:border-[var(--brand-coral)] focus:bg-white"
+        className="w-full rounded-2xl bg-white/72 px-4 py-3 text-sm text-[var(--brand-primary)] outline-none shadow-[inset_0_0_0_1px_rgba(58,17,98,0.06)] transition placeholder:text-[var(--brand-primary)]/35 focus:bg-white focus:shadow-[inset_0_0_0_1.5px_rgba(233,87,59,0.45)]"
         name={name}
         type={type}
         placeholder={placeholder}
@@ -219,7 +219,7 @@ export function Textarea({
     <label className="block">
       <span className="mb-2 block text-sm font-medium text-[var(--brand-primary)]/72">{label}</span>
       <textarea
-        className={`w-full rounded-2xl border border-[var(--brand-primary)]/10 bg-white/80 px-4 py-3 text-sm text-[var(--brand-primary)] outline-none transition placeholder:text-[var(--brand-primary)]/35 focus:border-[var(--brand-coral)] focus:bg-white ${className ?? "min-h-28"}`}
+        className={`w-full rounded-2xl bg-white/72 px-4 py-3 text-sm text-[var(--brand-primary)] outline-none shadow-[inset_0_0_0_1px_rgba(58,17,98,0.06)] transition placeholder:text-[var(--brand-primary)]/35 focus:bg-white focus:shadow-[inset_0_0_0_1.5px_rgba(233,87,59,0.45)] ${className ?? "min-h-28"}`}
         name={name}
         placeholder={placeholder}
         defaultValue={defaultValue}
@@ -246,7 +246,7 @@ export function Select({
     <label className="block">
       <span className="mb-2 block text-sm font-medium text-[var(--brand-primary)]/72">{label}</span>
       <select
-        className="w-full rounded-2xl border border-[var(--brand-primary)]/10 bg-white/80 px-4 py-3 text-sm text-[var(--brand-primary)] outline-none transition focus:border-[var(--brand-coral)] focus:bg-white disabled:cursor-not-allowed disabled:bg-[var(--brand-lilac)]/12 disabled:text-[var(--brand-primary)]/45"
+        className="w-full rounded-2xl bg-white/72 px-4 py-3 text-sm text-[var(--brand-primary)] outline-none shadow-[inset_0_0_0_1px_rgba(58,17,98,0.06)] transition focus:bg-white focus:shadow-[inset_0_0_0_1.5px_rgba(233,87,59,0.45)] disabled:cursor-not-allowed disabled:bg-[var(--brand-lilac)]/12 disabled:text-[var(--brand-primary)]/45 disabled:shadow-[inset_0_0_0_1px_rgba(58,17,98,0.04)]"
         name={name}
         defaultValue={defaultValue}
         disabled={disabled}
@@ -283,7 +283,7 @@ export function OwnerSelect({
     <label className="block">
       <span className="mb-2 block text-sm font-medium text-[var(--brand-primary)]/72">Ansvarig</span>
       <select
-        className="w-full rounded-2xl border border-[var(--brand-primary)]/10 bg-white/80 px-4 py-3 text-sm text-[var(--brand-primary)]/45 outline-none"
+        className="w-full rounded-2xl bg-white/72 px-4 py-3 text-sm text-[var(--brand-primary)]/45 outline-none shadow-[inset_0_0_0_1px_rgba(58,17,98,0.05)]"
         name="owner"
         defaultValue=""
         disabled
