@@ -9,7 +9,7 @@ import {
   SubmitButton,
 } from "@/components/crm-ui";
 import {
-  CRM_ADMIN_EMAIL,
+  CRM_ADMIN_EMAILS,
   CRM_ROLE_OPTIONS,
   CRM_ROLE_SELLER,
   getCrmUserDirectory,
@@ -37,9 +37,9 @@ export default async function AdminPage() {
           <PageStack>
             <div className="grid gap-4 md:grid-cols-3">
               <StatCard
-                label="Admin"
-                value={CRM_ADMIN_EMAIL}
-                hint="Endast denna e-postadress får ändra CRM-roller."
+                label="Admins"
+                value={String(CRM_ADMIN_EMAILS.length)}
+                hint={CRM_ADMIN_EMAILS.join(" · ")}
                 accent="amber"
               />
               <StatCard

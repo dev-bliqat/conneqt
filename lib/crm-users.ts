@@ -3,7 +3,7 @@ import "server-only";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { readCrmData } from "@/lib/crm-store";
 
-export const CRM_ADMIN_EMAIL = "josef@bliqat.se";
+export const CRM_ADMIN_EMAILS = ["josef@bliqat.se", "anton@bliqat.se"] as const;
 export const CRM_ROLE_NONE = "Ingen roll";
 export const CRM_ROLE_SELLER = "Säljare";
 export const CRM_ROLE_OPTIONS = [CRM_ROLE_NONE, CRM_ROLE_SELLER] as const;
@@ -21,6 +21,11 @@ export type CrmDirectoryUser = {
 
 function normalizeEmail(email?: string | null) {
   return (email ?? "").trim().toLowerCase();
+}
+
+export function isCrmAdminEmail(email?: string | null) {
+  const normalizedEmail = normalizeEmail(email);
+  return CRM_ADMIN_EMAILS.includes(normalizedEmail as (typeof CRM_ADMIN_EMAILS)[number]);
 }
 
 function getClerkDisplayName(user: {
@@ -72,7 +77,7 @@ export async function getCrmUserDirectory(): Promise<CrmDirectoryUser[]> {
       const existingProfile = data.profiles.find((profile) => profile.userId === user.id);
       const fullName = existingProfile?.fullName?.trim() || getClerkDisplayName(user);
       const role = sanitizeCrmRole(existingProfile?.role);
-      const isAdmin = normalizeEmail(email) === CRM_ADMIN_EMAIL;
+      const isAdmin = isCrmAdminEmail(email);
 
       return {
         userId: user.id,
@@ -115,7 +120,7 @@ export async function getCurrentUserAdminState() {
   return {
     userId,
     email,
-    isAdmin: normalizeEmail(email) === CRM_ADMIN_EMAIL,
+    isAdmin: isCrmAdminEmail(email),
   };
 }
 
@@ -123,7 +128,7 @@ export async function requireCrmAdmin() {
   const currentUser = await getCurrentUserAdminState();
 
   if (!currentUser.userId || !currentUser.isAdmin) {
-    throw new Error("Endast josef@bliqat.se kan administrera roller i CRM-systemet.");
+    throw new Error("Endast josef@bliqat.se och anton@bliqat.se kan administrera roller i CRM-systemet.");
   }
 
   return currentUser;

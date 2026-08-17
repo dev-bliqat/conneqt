@@ -59,7 +59,7 @@ export default async function ProfilPage() {
           <div className="md:col-span-2">
             <p className="rounded-2xl border border-[var(--brand-primary)]/10 bg-[var(--brand-lilac)]/12 px-4 py-3 text-sm text-[var(--brand-primary)]/65">
               Din roll är just nu <strong>{role || "Ingen roll"}</strong>. Endast
-              `josef@bliqat.se` kan ändra roller på `/admin`.
+              `josef@bliqat.se` och `anton@bliqat.se` kan ändra roller på `/admin`.
             </p>
           </div>
           <div className="md:col-span-2">
