@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CustomerForm } from "@/components/customer-form";
-import { ListItem, SectionCard, StatusPill, SurfaceList } from "@/components/crm-ui";
+import { SectionCard, StatusPill, SurfaceList } from "@/components/crm-ui";
 import { type Customer, type Deal } from "@/lib/crm-types";
 
 type CustomersViewProps = {
@@ -23,13 +23,26 @@ function CustomerModal({
   onClose: () => void;
   ownerOptions: string[];
 }) {
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+    };
+  }, [open]);
+
   if (!open) {
     return null;
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(36,16,54,0.45)] p-3 backdrop-blur-sm">
-      <div className="w-full max-w-5xl rounded-[1.8rem] border border-[var(--brand-primary)]/12 bg-white shadow-[0_30px_80px_rgba(58,17,98,0.18)]">
+      <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-[1.8rem] border border-[var(--brand-primary)]/12 bg-white shadow-[0_30px_80px_rgba(58,17,98,0.18)]">
         <div className="flex items-start justify-between gap-4 border-b border-[var(--brand-primary)]/8 px-6 py-4">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-[var(--brand-primary)]/42">
@@ -51,7 +64,7 @@ function CustomerModal({
           </button>
         </div>
 
-        <div className="px-6 py-5">
+        <div className="overflow-y-auto px-6 py-5">
           <CustomerForm mode="create" ownerOptions={ownerOptions} />
         </div>
       </div>
@@ -60,6 +73,10 @@ function CustomerModal({
 }
 
 function getCustomerStatusTone(status: Customer["status"]) {
+  if (!status) {
+    return "neutral";
+  }
+
   if (status === "Betalande kund" || status === "Konto skapat") {
     return "green";
   }
@@ -81,11 +98,16 @@ export function CustomersView({
   const pathname = usePathname();
   const [query, setQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [expandedCustomerId, setExpandedCustomerId] = useState<string | null>(null);
   const showModal = isModalOpen || openNewCustomer;
 
   function closeModal() {
     setIsModalOpen(false);
     router.replace(pathname);
+  }
+
+  function toggleCustomer(customerId: string) {
+    setExpandedCustomerId((current) => (current === customerId ? null : customerId));
   }
 
   const filteredCustomers = useMemo(() => {
@@ -102,7 +124,7 @@ export function CustomersView({
         customer.email,
         customer.phone,
         customer.city,
-        customer.status,
+        customer.status || "Ingen status",
       ]
         .filter(Boolean)
         .some((value) => value.toLowerCase().includes(search)),
@@ -153,83 +175,142 @@ export function CustomersView({
               const relatedDeals = deals.filter(
                 (deal) => deal.customerId === customer.id || deal.company === customer.company,
               );
+              const isExpanded = expandedCustomerId === customer.id;
 
               return (
-                <ListItem key={customer.id} tone={relatedDeals.length > 0 ? "amber" : "plain"}>
-                  <Link href={`/kunder/${customer.id}`} className="block">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-lg font-semibold text-[var(--brand-primary)]">
+                <article
+                  key={customer.id}
+                  className="overflow-hidden rounded-[1.35rem] bg-[rgba(255,255,255,0.82)] shadow-[0_10px_24px_rgba(58,17,98,0.035)]"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleCustomer(customer.id)}
+                    className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-[var(--brand-lilac)]/8"
+                  >
+                    <span
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary)]/6 text-lg text-[var(--brand-primary)]/70 transition ${
+                        isExpanded ? "rotate-90" : ""
+                      }`}
+                      aria-hidden="true"
+                    >
+                      {"›"}
+                    </span>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="grid gap-3 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center">
+                        <div className="min-w-0">
+                          <p className="truncate text-base font-semibold text-[var(--brand-primary)]">
                             {customer.company}
                           </p>
-                          <StatusPill tone={getCustomerStatusTone(customer.status)}>
-                            {customer.status}
-                          </StatusPill>
-                        </div>
-                        <p className="text-sm text-[var(--brand-primary)]/55">
-                          {customer.name} · {customer.segment} · {customer.city || "Ingen stad"}
-                        </p>
-                      </div>
-                      <StatusPill>{`${relatedDeals.length} affärer`}</StatusPill>
-                    </div>
-
-                    <p className="mt-3 text-sm text-[var(--brand-primary)]/62">
-                      {customer.email || "Ingen e-post"} · {customer.phone || "Ingen telefon"}
-                    </p>
-
-                    <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.18em] text-[var(--brand-primary)]/40">
-                          Statusanteckningar
-                        </p>
-                        <p className="mt-2 text-sm text-[var(--brand-primary)]/55">
-                          {customer.statusNotes || "Inga statusanteckningar ännu."}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.18em] text-[var(--brand-primary)]/40">
-                          Follow-up
-                        </p>
-                        <p className="mt-2 text-sm text-[var(--brand-primary)]/55">
-                          {customer.followUpDate || customer.followUpAction
-                            ? `${customer.followUpDate || "Datum saknas"} · ${customer.followUpAction || "Åtgärd saknas"}`
-                            : "Ingen follow-up planerad."}
-                        </p>
-                        {customer.lastFollowUpCompletedAt ? (
-                          <p className="mt-2 text-xs text-[var(--brand-primary)]/45">
-                            Senast klar: {customer.lastFollowUpCompletedAt}
+                          <p className="truncate text-sm text-[var(--brand-primary)]/55">
+                            {customer.name} · {customer.email || "Ingen e-post"}
                           </p>
-                        ) : null}
-                      </div>
-                    </div>
+                        </div>
 
-                    <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      <p className="text-sm font-medium text-[var(--brand-primary)]/65">
-                        Aktiva affärer: {relatedDeals.length}
-                      </p>
-                      <p className="text-sm text-[var(--brand-primary)]/50">
-                        {customer.notes || "Inga övriga anteckningar ännu."}
-                      </p>
-                    </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--brand-primary)]/38">
+                            Ansvarig
+                          </p>
+                          <p className="truncate text-sm text-[var(--brand-primary)]/68">
+                            {customer.owner || "Ej satt"}
+                          </p>
+                        </div>
 
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {customer.wonAt ? (
-                          <StatusPill tone="green">
-                            Vunnen
-                            {customer.wonValue > 0
-                              ? ` · ${new Intl.NumberFormat("sv-SE").format(customer.wonValue)} SEK`
-                              : ""}
+                        <div className="min-w-0">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--brand-primary)]/38">
+                            Follow-up
+                          </p>
+                          <p className="truncate text-sm text-[var(--brand-primary)]/68">
+                            {customer.followUpDate || "Ingen planerad"}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
+                          <StatusPill tone={getCustomerStatusTone(customer.status)}>
+                            {customer.status || "Ingen status"}
                           </StatusPill>
-                        ) : null}
+                          <StatusPill>{`${relatedDeals.length} affärer`}</StatusPill>
+                        </div>
                       </div>
-                      <span className="rounded-full border border-[var(--brand-primary)]/10 px-4 py-2 text-sm font-medium text-[var(--brand-primary)] transition hover:bg-[var(--brand-lilac)]/18">
-                        Öppna kundsida
-                      </span>
                     </div>
-                  </Link>
-                </ListItem>
+                  </button>
+
+                  {isExpanded ? (
+                    <div className="border-t border-[var(--brand-primary)]/8 px-5 py-5">
+                      <div className="grid gap-5 lg:grid-cols-2">
+                        <div className="space-y-4">
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--brand-primary)]/38">
+                              Kontaktuppgifter
+                            </p>
+                            <p className="mt-2 text-sm text-[var(--brand-primary)]/64">
+                              {customer.email || "Ingen e-post"} · {customer.phone || "Ingen telefon"}
+                            </p>
+                            <p className="mt-1 text-sm text-[var(--brand-primary)]/52">
+                              {customer.segment} · {customer.city || "Ingen stad"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--brand-primary)]/38">
+                              Statusanteckningar
+                            </p>
+                            <p className="mt-2 text-sm leading-6 text-[var(--brand-primary)]/60">
+                              {customer.statusNotes || "Inga statusanteckningar ännu."}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--brand-primary)]/38">
+                              Nästa follow-up
+                            </p>
+                            <p className="mt-2 text-sm text-[var(--brand-primary)]/64">
+                              {customer.followUpDate || customer.followUpAction
+                                ? `${customer.followUpDate || "Datum saknas"} · ${customer.followUpAction || "Åtgärd saknas"}`
+                                : "Ingen follow-up planerad."}
+                            </p>
+                            {customer.lastFollowUpCompletedAt ? (
+                              <p className="mt-1 text-xs text-[var(--brand-primary)]/45">
+                                Senast klar: {customer.lastFollowUpCompletedAt}
+                              </p>
+                            ) : null}
+                          </div>
+
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--brand-primary)]/38">
+                              Övriga anteckningar
+                            </p>
+                            <p className="mt-2 text-sm leading-6 text-[var(--brand-primary)]/60">
+                              {customer.notes || "Inga övriga anteckningar ännu."}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {customer.wonAt ? (
+                            <StatusPill tone="green">
+                              Vunnen
+                              {customer.wonValue > 0
+                                ? ` · ${new Intl.NumberFormat("sv-SE").format(customer.wonValue)} SEK`
+                                : ""}
+                            </StatusPill>
+                          ) : null}
+                        </div>
+
+                        <Link
+                          href={`/kunder/${customer.id}`}
+                          className="rounded-full border border-[var(--brand-primary)]/10 px-4 py-2 text-sm font-medium text-[var(--brand-primary)] transition hover:bg-[var(--brand-lilac)]/18"
+                        >
+                          Öppna kundsida
+                        </Link>
+                      </div>
+                    </div>
+                  ) : null}
+                </article>
               );
             })
           )}

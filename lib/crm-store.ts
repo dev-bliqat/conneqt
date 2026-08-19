@@ -145,9 +145,12 @@ function normalizeCrmData(parsed: CrmData): CrmData {
     ...parsed,
     customers: parsed.customers.map((customer) => ({
       ...customer,
-      status: customerStatuses.includes(customer.status as (typeof customerStatuses)[number])
-        ? (customer.status as (typeof customerStatuses)[number])
-        : "Ska boka nytt möte",
+      status:
+        customer.status === ""
+          ? ""
+          : customerStatuses.includes(customer.status as (typeof customerStatuses)[number])
+            ? (customer.status as (typeof customerStatuses)[number])
+            : "Ska boka nytt möte",
       statusNotes: customer.statusNotes ?? "",
       notes: customer.notes ?? "",
       followUpDate: customer.followUpDate ?? "",

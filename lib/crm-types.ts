@@ -50,7 +50,7 @@ export type Customer = {
   email: string;
   phone: string;
   segment: string;
-  status: CustomerStatus;
+  status: CustomerStatus | "";
   statusNotes: string;
   city: string;
   notes: string;

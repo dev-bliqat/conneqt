@@ -297,11 +297,18 @@ export function OwnerSelect({
   );
 }
 
-export function SubmitButton({ children }: { children: ReactNode }) {
+export function SubmitButton({
+  children,
+  disabled = false,
+}: {
+  children: ReactNode;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="submit"
-      className="rounded-full bg-[var(--brand-primary)] px-5 py-3 text-sm font-medium text-white transition hover:bg-[var(--brand-ink)]"
+      disabled={disabled}
+      className="rounded-full bg-[var(--brand-primary)] px-5 py-3 text-sm font-medium text-white transition hover:bg-[var(--brand-ink)] disabled:cursor-not-allowed disabled:bg-[var(--brand-primary)]/35 disabled:hover:bg-[var(--brand-primary)]/35"
     >
       {children}
     </button>

@@ -26,6 +26,7 @@ import {
   updateGoogleCalendarMeetingForUser,
 } from "@/lib/google-calendar";
 import type { CalendarMeeting } from "@/lib/crm-types";
+import type { CustomerImportState } from "@/lib/customer-import-state";
 
 const crmPaths = [
   "/hem",
@@ -33,6 +34,7 @@ const crmPaths = [
   "/analys",
   "/aktiviteter",
   "/kunder",
+  "/import",
   "/pipeline",
   "/profil",
   "/admin",
@@ -75,6 +77,16 @@ function sanitizeCustomerStatus(value: string) {
   return customerStatuses.includes(value as (typeof customerStatuses)[number])
     ? (value as (typeof customerStatuses)[number])
     : "Ska boka nytt möte";
+}
+
+function sanitizeImportedCustomerStatus(value: string) {
+  if (!value) {
+    return "";
+  }
+
+  return customerStatuses.includes(value as (typeof customerStatuses)[number])
+    ? (value as (typeof customerStatuses)[number])
+    : "";
 }
 
 async function sanitizeOwnerSelection(selectedOwner: string, fallbackUserId: string) {
@@ -370,6 +382,182 @@ export async function createCustomer(formData: FormData) {
   }));
 
   revalidateCrm();
+}
+
+export async function importCustomersFromCsv(
+  _previousState: CustomerImportState,
+  formData: FormData,
+): Promise<CustomerImportState> {
+  const userId = await requireUser();
+  const rowsJson = asString(formData, "rowsJson");
+  const mappingJson = asString(formData, "mappingJson");
+  const defaultOwnerSelection = asString(formData, "defaultOwner");
+  const hasHeader = asString(formData, "hasHeader") === "1";
+
+  if (!rowsJson || !mappingJson) {
+    return {
+      error: "Ingen CSV-data eller kolumnmappning skickades med.",
+      imported: 0,
+      skipped: 0,
+      duplicates: 0,
+    };
+  }
+
+  type ImportField =
+    | "name"
+    | "company"
+    | "email"
+    | "phone"
+    | "segment"
+    | "status"
+    | "statusNotes"
+    | "city"
+    | "notes"
+    | "followUpDate"
+    | "followUpAction"
+    | "owner";
+
+  let rows: string[][];
+  let mapping: Partial<Record<ImportField, string>>;
+
+  try {
+    rows = JSON.parse(rowsJson) as string[][];
+    mapping = JSON.parse(mappingJson) as Partial<Record<ImportField, string>>;
+  } catch {
+    return {
+      error: "Kunde inte läsa CSV-underlaget. Försök ladda upp filen igen.",
+      imported: 0,
+      skipped: 0,
+      duplicates: 0,
+    };
+  }
+
+  const defaultOwner = await sanitizeOwnerSelection(defaultOwnerSelection, userId);
+
+  if (
+    !mapping.company ||
+    mapping.company === "__skip__" ||
+    !mapping.name ||
+    mapping.name === "__skip__"
+  ) {
+    return {
+      error: "Du måste mappa både Bolag och Kontaktperson innan importen kan köras.",
+      imported: 0,
+      skipped: 0,
+      duplicates: 0,
+    };
+  }
+
+  let imported = 0;
+  let skipped = 0;
+  let duplicates = 0;
+
+  await updateCrmData(async (current) => {
+    const nextCustomers = [...current.customers];
+    const nextActivities = [...current.activities];
+    const seenKeys = new Set(
+      current.customers.map((customer) =>
+        `${customer.company.trim().toLowerCase()}::${(customer.email || customer.name).trim().toLowerCase()}`,
+      ),
+    );
+
+    const startIndex = hasHeader ? 1 : 0;
+
+    const getValue = (row: string[], field: ImportField) => {
+      const mappedIndex = mapping[field];
+
+      if (mappedIndex === undefined || mappedIndex === "" || mappedIndex === "__skip__") {
+        return "";
+      }
+
+      const index = Number(mappedIndex);
+      return Number.isFinite(index) ? (row[index] ?? "").trim() : "";
+    };
+
+    for (let index = startIndex; index < rows.length; index += 1) {
+      const row = rows[index];
+
+      if (!row || row.every((value) => !String(value ?? "").trim())) {
+        skipped += 1;
+        continue;
+      }
+
+      const company = getValue(row, "company");
+      const name = getValue(row, "name");
+
+      if (!company || !name) {
+        skipped += 1;
+        continue;
+      }
+
+      const email = getValue(row, "email");
+      const dedupeKey = `${company.toLowerCase()}::${(email || name).toLowerCase()}`;
+
+      if (seenKeys.has(dedupeKey)) {
+        duplicates += 1;
+        continue;
+      }
+
+      const ownerValue = getValue(row, "owner");
+      const owner = await sanitizeOwnerSelection(ownerValue || defaultOwner, userId);
+      const customer: Customer = {
+        id: crypto.randomUUID(),
+        name,
+        company,
+        email,
+        phone: getValue(row, "phone"),
+        segment: getValue(row, "segment") || "Tillväxt",
+        status: sanitizeImportedCustomerStatus(getValue(row, "status")),
+        statusNotes: getValue(row, "statusNotes"),
+        city: getValue(row, "city"),
+        notes: getValue(row, "notes"),
+        followUpDate: getValue(row, "followUpDate"),
+        followUpAction: getValue(row, "followUpAction"),
+        lastFollowUpCompletedAt: "",
+        wonAt: "",
+        wonValue: 0,
+        owner,
+        createdAt: today(),
+      };
+
+      nextCustomers.unshift(customer);
+      seenKeys.add(dedupeKey);
+      imported += 1;
+
+      if (customer.followUpDate || customer.followUpAction) {
+        nextActivities.unshift({
+          id: crypto.randomUUID(),
+          title: `Följ upp kund: ${customer.company}`,
+          type: "Uppgift",
+          status: "Planerad",
+          dueDate: customer.followUpDate || today(),
+          owner: customer.owner,
+          relatedType: "customer",
+          relatedId: customer.id,
+          notes:
+            customer.followUpAction ||
+            customer.statusNotes ||
+            "Planerad kunduppföljning från CSV-import.",
+          createdAt: today(),
+        });
+      }
+    }
+
+    return {
+      ...current,
+      customers: nextCustomers,
+      activities: nextActivities,
+    };
+  });
+
+  revalidateCrm();
+
+  return {
+    error: null,
+    imported,
+    skipped,
+    duplicates,
+  };
 }
 
 export async function updateCustomer(formData: FormData) {

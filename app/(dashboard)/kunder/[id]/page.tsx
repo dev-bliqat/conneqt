@@ -56,8 +56,8 @@ export default async function CustomerDetailPage({
             {customer.name} · {customer.email || "Ingen e-post"} · {customer.phone || "Ingen telefon"}
           </p>
         </div>
-        <StatusPill tone={customer.status === "Betalande kund" ? "green" : "amber"}>
-          {customer.status}
+        <StatusPill tone={customer.status === "Betalande kund" ? "green" : "neutral"}>
+          {customer.status || "Ingen status"}
         </StatusPill>
       </div>
 

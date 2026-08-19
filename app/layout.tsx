@@ -6,6 +6,7 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
+import Image from "next/image";
 import Link from "next/link";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { GOOGLE_CALENDAR_SCOPE } from "@/lib/google-calendar-shared";
@@ -26,16 +27,22 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 items-center gap-4">
                   <Link href="/" className="flex shrink-0 items-center gap-3">
-                    <span className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-[1.15rem] bg-[linear-gradient(180deg,_var(--brand-primary)_0%,_#5c1c90_100%)] shadow-[0_10px_24px_rgba(58,17,98,0.2)]">
-                      <span className="absolute -bottom-2 -right-2 h-7 w-7 rounded-full bg-[linear-gradient(180deg,_rgba(233,87,59,0.95)_0%,_rgba(254,182,211,0.92)_100%)]" />
-                      <span className="absolute left-0 top-0 h-6 w-6 rounded-br-[1rem] bg-white/14" />
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[1.15rem]">
+                      <Image
+                        src="/bliqat-logo.png"
+                        alt="Bliqat"
+                        width={44}
+                        height={44}
+                        className="h-11 w-11 object-contain"
+                        priority
+                      />
                     </span>
                     <span className="block">
                       <span className="block text-[1.3rem] font-semibold leading-none tracking-[-0.03em] text-[var(--brand-primary)]">
                         bliqat.
                       </span>
                       <span className="mt-1 block text-[11px] font-medium uppercase tracking-[0.28em] text-[var(--brand-primary)]/45">
-                        CRM-arbetsyta
+                        Conneqt
                       </span>
                     </span>
                   </Link>
@@ -61,6 +68,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                     </SignUpButton>
                   </Show>
                   <Show when="signed-in">
+                    <Link
+                      href="/kunder?newCustomer=1"
+                      className="rounded-full bg-[var(--brand-primary)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--brand-ink)]"
+                    >
+                      Ny kund
+                    </Link>
                     <UserButton
                       userProfileProps={{
                         additionalOAuthScopes: {
@@ -68,18 +81,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                         },
                       }}
                     />
-                    <Link
-                      href="/kunder?newCustomer=1"
-                      className="rounded-full bg-[var(--brand-primary)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--brand-ink)]"
-                    >
-                      Ny kund
-                    </Link>
                   </Show>
                 </div>
               </div>
             </div>
           </header>
           {children}
+          <footer className="mt-auto border-t border-[var(--brand-primary)]/10 bg-[rgba(255,255,255,0.72)]">
+            <div className="mx-auto w-full max-w-[1500px] px-4 py-4 text-center text-sm text-[var(--brand-primary)]/55 md:px-6">
+              © 2026 Bliqat Software Labs AB · Org.nr 559559-7088 · Säte Lidingö
+            </div>
+          </footer>
         </ClerkProvider>
       </body>
     </html>
