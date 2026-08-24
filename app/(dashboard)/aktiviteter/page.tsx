@@ -15,7 +15,9 @@ import {
   Textarea,
 } from "@/components/crm-ui";
 import { getSellerOwnerOptions } from "@/lib/crm-users";
-import { getGoogleCalendarEventsForUser } from "@/lib/google-calendar";
+import {
+  syncGoogleCalendarMeetingsForUser,
+} from "@/lib/google-calendar";
 import {
   getRelatedLabel,
   readCrmData,
@@ -30,18 +32,22 @@ export default async function AktiviteterPage() {
     readCrmData(),
     getSellerOwnerOptions(),
   ]);
-  const googleCalendar = userId ? await getGoogleCalendarEventsForUser(userId) : null;
+  const googleCalendarResult = userId
+    ? await syncGoogleCalendarMeetingsForUser(userId, data)
+    : null;
+  const googleCalendar = googleCalendarResult?.state ?? null;
+  const calendarData = googleCalendarResult?.data ?? data;
   const relatedOptions = [
     { label: "Allmänt", value: "general:" },
-    ...data.leads.map((lead) => ({
+    ...calendarData.leads.map((lead) => ({
       label: `Lead · ${lead.company}`,
       value: `lead:${lead.id}`,
     })),
-    ...data.customers.map((customer) => ({
+    ...calendarData.customers.map((customer) => ({
       label: `Kund · ${customer.company}`,
       value: `customer:${customer.id}`,
     })),
-    ...data.deals.map((deal) => ({
+    ...calendarData.deals.map((deal) => ({
       label: `Affär · ${deal.name}`,
       value: `deal:${deal.id}`,
     })),
@@ -51,8 +57,8 @@ export default async function AktiviteterPage() {
     <PageStack>
       <CalendarView
         calendarState={googleCalendar}
-        meetings={sortCalendarMeetings(data.calendarMeetings)}
-        data={data}
+        meetings={sortCalendarMeetings(calendarData.calendarMeetings)}
+        data={calendarData}
       />
 
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
@@ -116,7 +122,7 @@ export default async function AktiviteterPage() {
           subtitle="Planerade och slutförda aktiviteter i samma arbetsflöde."
         >
           <SurfaceList>
-            {sortActivities(data.activities).map((activity) => (
+            {sortActivities(calendarData.activities).map((activity) => (
               <ListItem
                 key={activity.id}
                 tone={activity.status === "Planerad" ? "amber" : "plain"}
@@ -137,7 +143,7 @@ export default async function AktiviteterPage() {
                       {activity.type} · {activity.dueDate}
                     </p>
                   </div>
-                  <StatusPill>{getRelatedLabel(activity, data)}</StatusPill>
+                  <StatusPill>{getRelatedLabel(activity, calendarData)}</StatusPill>
                 </div>
                 {activity.notes ? (
                   <p className="mt-3 text-sm text-black/60">{activity.notes}</p>

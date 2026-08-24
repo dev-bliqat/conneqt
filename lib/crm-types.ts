@@ -116,6 +116,7 @@ export type Profile = {
   role: string;
   focusArea: string;
   bio: string;
+  emailSignature: string;
   updatedAt: string;
 };
 

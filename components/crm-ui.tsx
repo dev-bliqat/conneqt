@@ -16,8 +16,8 @@ export function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-[1.5rem] bg-[rgba(255,255,255,0.82)] shadow-[0_16px_34px_rgba(58,17,98,0.05)] backdrop-blur-sm">
-      <div className="flex flex-wrap items-start justify-between gap-4 bg-[linear-gradient(90deg,_rgba(212,178,231,0.1)_0%,_rgba(255,255,255,0.72)_100%)] px-6 py-5">
+    <section className="border-b border-[var(--brand-primary)]/10 pb-6 last:border-b-0 last:pb-0">
+      <div className="flex flex-wrap items-start justify-between gap-4 px-1 py-1">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-[var(--brand-primary)]/42">
             Sektion
@@ -29,7 +29,7 @@ export function SectionCard({
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
-      <div className="p-6">{children}</div>
+      <div className="px-1 pt-5">{children}</div>
     </section>
   );
 }
@@ -46,18 +46,13 @@ export function StatCard({
   accent?: "amber" | "dark" | "soft";
 }) {
   const accents = {
-    amber:
-      "bg-[linear-gradient(180deg,_rgba(254,182,211,0.18)_0%,_rgba(255,255,255,0.98)_100%)]",
-    dark:
-      "bg-[linear-gradient(180deg,_rgba(58,17,98,0.96)_0%,_rgba(36,16,54,0.96)_100%)] text-white",
-    soft:
-      "bg-[linear-gradient(180deg,_rgba(212,178,231,0.14)_0%,_rgba(255,255,255,0.98)_100%)]",
+    amber: "text-[var(--brand-primary)]",
+    dark: "text-[var(--brand-primary)]",
+    soft: "text-[var(--brand-primary)]",
   } as const;
 
   return (
-    <article
-      className={`rounded-[1.35rem] p-5 shadow-[0_14px_28px_rgba(0,0,0,0.04)] ${accents[accent]}`}
-    >
+    <article className={`px-1 py-2 ${accents[accent]}`}>
       <p className="text-xs font-medium uppercase tracking-[0.25em] text-[var(--brand-primary)]/45">
         {label}
       </p>
@@ -79,8 +74,8 @@ export function PageIntro({
   meta?: ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-[1.7rem] bg-[radial-gradient(circle_at_top_left,_rgba(212,178,231,0.5),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(233,87,59,0.16),_transparent_24%),linear-gradient(180deg,_rgba(255,255,255,0.95)_0%,_rgba(248,242,250,0.96)_100%)] shadow-[0_18px_44px_rgba(58,17,98,0.06)]">
-      <div className="flex flex-wrap items-start justify-between gap-6 px-8 py-8">
+    <div className="border-b border-[var(--brand-primary)]/10 pb-8">
+      <div className="flex flex-wrap items-start justify-between gap-6 px-1 py-1">
         <div className="max-w-3xl">
           <p className="text-sm font-medium uppercase tracking-[0.3em] text-[var(--brand-primary)]/45">
             {eyebrow}
@@ -162,10 +157,10 @@ export function ListItem({
 }) {
   return (
     <article
-      className={`rounded-[1.35rem] p-5 shadow-[0_10px_24px_rgba(58,17,98,0.035)] ${
+      className={`px-1 py-4 ${
         tone === "amber"
-          ? "bg-[linear-gradient(180deg,_rgba(254,182,211,0.12)_0%,_rgba(255,255,255,0.98)_100%)]"
-          : "bg-[rgba(255,255,255,0.78)]"
+          ? "border-l-2 border-[var(--brand-coral)]/28 pl-4"
+          : "border-l-2 border-transparent pl-4"
       }`}
     >
       {children}

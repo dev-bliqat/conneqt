@@ -25,6 +25,36 @@ type CalendarEventInput = {
 
 type CalendarTokenIntent = "read" | "write";
 
+function extractGoogleErrorMessage(payload: unknown) {
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "error" in payload &&
+    payload.error &&
+    typeof payload.error === "object"
+  ) {
+    const googleError = payload.error as {
+      message?: string;
+      status?: string;
+      errors?: Array<{ message?: string; reason?: string }>;
+    };
+
+    const primaryReason = googleError.errors?.[0]?.reason;
+    const primaryMessage = googleError.errors?.[0]?.message;
+
+    return [
+      googleError.message,
+      googleError.status,
+      primaryReason,
+      primaryMessage,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
+
+  return "";
+}
+
 function hasGoogleCalendarReadScope(scopes?: string[]) {
   return Boolean(
     scopes?.some((scope) =>
@@ -122,6 +152,27 @@ async function fetchGoogleCalendar<T>(
   });
 
   if (response.status === 401 || response.status === 403) {
+    let responseMessage = "";
+
+    try {
+      const payload = (await response.json()) as unknown;
+      responseMessage = extractGoogleErrorMessage(payload);
+    } catch {
+      try {
+        responseMessage = await response.text();
+      } catch {
+        responseMessage = "";
+      }
+    }
+
+    console.error("Google Calendar request failed", {
+      status: response.status,
+      statusText: response.statusText,
+      path,
+      intent,
+      responseMessage,
+    });
+
     return {
       ok: false as const,
       state: {
@@ -129,13 +180,34 @@ async function fetchGoogleCalendar<T>(
         events: [],
         message:
           intent === "write"
-            ? "Kalendern kunde inte uppdateras med nuvarande Google-behörighet. Koppla om Google-kontot från profilen och godkänn kalenderåtkomst."
-            : "Kalendern kunde inte läsas med nuvarande Google-behörighet. Koppla om Google-kontot från profilen och godkänn kalenderåtkomst.",
+            ? `Kalendern kunde inte uppdateras med nuvarande Google-behörighet.${responseMessage ? ` Google svarade: ${responseMessage}` : " Koppla om Google-kontot från profilen och godkänn kalenderåtkomst."}`
+            : `Kalendern kunde inte läsas med nuvarande Google-behörighet.${responseMessage ? ` Google svarade: ${responseMessage}` : " Koppla om Google-kontot från profilen och godkänn kalenderåtkomst."}`,
       },
     };
   }
 
   if (!response.ok) {
+    let responseMessage = "";
+
+    try {
+      const payload = (await response.json()) as unknown;
+      responseMessage = extractGoogleErrorMessage(payload);
+    } catch {
+      try {
+        responseMessage = await response.text();
+      } catch {
+        responseMessage = "";
+      }
+    }
+
+    console.error("Google Calendar request failed", {
+      status: response.status,
+      statusText: response.statusText,
+      path,
+      intent,
+      responseMessage,
+    });
+
     return {
       ok: false as const,
       state: {
@@ -143,8 +215,8 @@ async function fetchGoogleCalendar<T>(
         events: [],
         message:
           intent === "write"
-            ? "Google Kalender kunde inte uppdateras just nu."
-            : "Google Kalender kunde inte hämtas just nu.",
+            ? `Google Kalender kunde inte uppdateras just nu.${responseMessage ? ` Google svarade: ${responseMessage}` : ""}`
+            : `Google Kalender kunde inte hämtas just nu.${responseMessage ? ` Google svarade: ${responseMessage}` : ""}`,
       },
     };
   }

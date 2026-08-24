@@ -22,6 +22,13 @@ export const navigationItems: NavigationItem[] = [
     shortLabel: "KND",
   },
   {
+    href: "/mail",
+    label: "Mail",
+    blurb: "Skicka utskick från CRM",
+    section: "Sälj",
+    shortLabel: "MAIL",
+  },
+  {
     href: "/aktiviteter",
     label: "Kalender",
     blurb: "Planerade uppföljningar",

@@ -79,6 +79,16 @@ export default async function ProfilPage() {
             />
           </div>
           <div className="md:col-span-2">
+            <Textarea
+              label="E-postsignatur"
+              name="emailSignature"
+              defaultValue={profile.emailSignature}
+              placeholder={"Med vanliga halsningar,\nJosef Handel\nBliqat"}
+              rows={5}
+              className="min-h-[130px]"
+            />
+          </div>
+          <div className="md:col-span-2">
             <SubmitButton>Spara profil</SubmitButton>
           </div>
           </FormGrid>

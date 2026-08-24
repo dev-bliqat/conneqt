@@ -208,7 +208,7 @@ export function CustomerImportView({ ownerOptions }: CustomerImportViewProps) {
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-            <div className="space-y-4 rounded-[1.35rem] bg-white/72 p-5 shadow-[0_10px_24px_rgba(58,17,98,0.035)]">
+            <div className="space-y-4 p-1">
               <label className="block">
                 <span className="mb-2 block text-sm font-medium text-[var(--brand-primary)]/72">
                   CSV-fil
@@ -259,7 +259,7 @@ export function CustomerImportView({ ownerOptions }: CustomerImportViewProps) {
               </button>
             </div>
 
-            <div className="rounded-[1.35rem] bg-white/72 p-5 shadow-[0_10px_24px_rgba(58,17,98,0.035)]">
+            <div className="p-1">
               <p className="text-sm font-medium text-[var(--brand-primary)]/72">
                 Förhandsvisning
               </p>
@@ -328,7 +328,7 @@ export function CustomerImportView({ ownerOptions }: CustomerImportViewProps) {
               ))}
             </div>
 
-            <div className="rounded-[1.35rem] bg-white/72 p-5 shadow-[0_10px_24px_rgba(58,17,98,0.035)]">
+            <div className="p-1">
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[var(--brand-primary)]/72">

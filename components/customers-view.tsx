@@ -180,12 +180,12 @@ export function CustomersView({
               return (
                 <article
                   key={customer.id}
-                  className="overflow-hidden rounded-[1.35rem] bg-[rgba(255,255,255,0.82)] shadow-[0_10px_24px_rgba(58,17,98,0.035)]"
+                  className="overflow-hidden border-b border-[var(--brand-primary)]/8 last:border-b-0"
                 >
                   <button
                     type="button"
                     onClick={() => toggleCustomer(customer.id)}
-                    className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-[var(--brand-lilac)]/8"
+                    className="flex w-full items-center gap-3 px-1 py-4 text-left transition hover:bg-[var(--brand-lilac)]/8"
                   >
                     <span
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary)]/6 text-lg text-[var(--brand-primary)]/70 transition ${
@@ -236,7 +236,7 @@ export function CustomersView({
                   </button>
 
                   {isExpanded ? (
-                    <div className="border-t border-[var(--brand-primary)]/8 px-5 py-5">
+                    <div className="border-t border-[var(--brand-primary)]/8 px-1 py-5">
                       <div className="grid gap-5 lg:grid-cols-2">
                         <div className="space-y-4">
                           <div>

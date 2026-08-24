@@ -171,6 +171,12 @@ function normalizeCrmData(parsed: CrmData): CrmData {
       lastSyncedAt: meeting.lastSyncedAt ?? new Date().toISOString(),
       updatedAt: meeting.updatedAt ?? new Date().toISOString(),
     })),
+    profiles: (parsed.profiles ?? []).map((profile) => ({
+      ...getDefaultProfile(profile.userId),
+      ...profile,
+      emailSignature: profile.emailSignature ?? "",
+      updatedAt: profile.updatedAt ?? new Date().toISOString(),
+    })),
   };
 }
 
@@ -306,8 +312,23 @@ export function getDefaultProfile(userId: string): Profile {
     role: "Ingen roll",
     focusArea: "Prioritera varma leads och skapa struktur i pipeline.",
     bio: "",
+    emailSignature: "",
     updatedAt: new Date().toISOString(),
   };
+}
+
+export function getEmailSignature(profile: Pick<Profile, "fullName" | "emailSignature">) {
+  if (profile.emailSignature.trim()) {
+    return profile.emailSignature.trim();
+  }
+
+  const name = profile.fullName.trim() || "Avsändare";
+
+  return [
+    "Med vänliga hälsningar,",
+    name,
+    "Bliqat",
+  ].join("\n");
 }
 
 export function formatCurrency(value: number) {

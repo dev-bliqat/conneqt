@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -16,7 +17,6 @@ import {
 import { type CalendarViewState } from "@/lib/google-calendar-shared";
 import type { CalendarMeeting, CrmData } from "@/lib/crm-types";
 
-const INITIAL_NOW_REFERENCE = new Date("2026-08-16T12:00:00");
 const DAY_START_HOUR = 0;
 const DAY_END_HOUR = 23;
 const HOUR_HEIGHT = 76;
@@ -969,7 +969,7 @@ function WeekPlanner({
 }
 
 export function CalendarView({ calendarState, meetings, data }: CalendarViewProps) {
-  const [currentTime, setCurrentTime] = useState(INITIAL_NOW_REFERENCE);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<CalendarMeeting | null>(null);
   const [createDraftRange, setCreateDraftRange] = useState<{
@@ -977,7 +977,7 @@ export function CalendarView({ calendarState, meetings, data }: CalendarViewProp
     endAt: string;
   } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("week");
-  const [anchorDate, setAnchorDate] = useState(startOfDay(INITIAL_NOW_REFERENCE));
+  const [anchorDate, setAnchorDate] = useState(() => startOfDay(new Date()));
   const [visibleFamilies, setVisibleFamilies] = useState({
     work: true,
     meetings: true,
@@ -1363,13 +1363,23 @@ export function CalendarView({ calendarState, meetings, data }: CalendarViewProp
             {calendarState?.status !== "ready" ? (
               <div className="px-5 pt-5 lg:px-7">
                 <div className="rounded-[1.35rem] border border-[#dadce0] bg-white px-5 py-6">
-                  <p className="text-base font-medium text-[#202124]">
-                    Google Kalender behöver anslutas fullt ut
-                  </p>
-                  <p className="mt-3 text-sm leading-6 text-[#5f6368]">
-                    {calendarState?.message ??
-                      "Ingen användarsession hittades för att visa kalendern."}
-                  </p>
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="max-w-3xl">
+                      <p className="text-base font-medium text-[#202124]">
+                        Google Kalender behöver anslutas fullt ut
+                      </p>
+                      <p className="mt-3 text-sm leading-6 text-[#5f6368]">
+                        {calendarState?.message ??
+                          "Ingen användarsession hittades för att visa kalendern."}
+                      </p>
+                    </div>
+                    <Link
+                      href="/user-profile"
+                      className="inline-flex items-center rounded-full bg-[#1a73e8] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#185abc]"
+                    >
+                      Reconnecta Google
+                    </Link>
+                  </div>
                 </div>
               </div>
             ) : null}

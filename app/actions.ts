@@ -25,7 +25,10 @@ import {
   syncGoogleCalendarMeetingsForUser,
   updateGoogleCalendarMeetingForUser,
 } from "@/lib/google-calendar";
+import { sendGoogleMailToRecipients } from "@/lib/google-mail";
 import type { CalendarMeeting } from "@/lib/crm-types";
+import type { CustomerEmailState } from "@/lib/customer-email-state";
+import { getEmailSignature } from "@/lib/crm-store";
 import type { CustomerImportState } from "@/lib/customer-import-state";
 
 const crmPaths = [
@@ -71,6 +74,32 @@ function asNumber(formData: FormData, key: string) {
 
 function today() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function parseRecipientList(value: string) {
+  return Array.from(
+    new Set(
+      value
+        .split(/[\n,;]+/)
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  );
+}
+
+function parseIdList(value: string) {
+  return Array.from(
+    new Set(
+      value
+        .split(/[,\n;]+/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 function sanitizeCustomerStatus(value: string) {
@@ -821,6 +850,7 @@ export async function updateProfile(formData: FormData) {
       role: existing?.role ?? CRM_ROLE_NONE,
       focusArea: asString(formData, "focusArea"),
       bio: asString(formData, "bio"),
+      emailSignature: asString(formData, "emailSignature"),
       updatedAt: new Date().toISOString(),
     };
 
@@ -833,6 +863,104 @@ export async function updateProfile(formData: FormData) {
   });
 
   revalidateCrm();
+}
+
+export async function sendBulkCustomerEmail(
+  _previousState: CustomerEmailState,
+  formData: FormData,
+): Promise<CustomerEmailState> {
+  const userId = await requireUser();
+  const customerId = asString(formData, "customerId");
+  const customerIds = parseIdList(asString(formData, "customerIds"));
+  const subject = asString(formData, "subject");
+  const body = asString(formData, "body");
+  const recipients = parseRecipientList(asString(formData, "recipients"));
+
+  if (!subject || !body) {
+    return {
+      error: "Ämne och meddelande måste fyllas i innan utskicket kan skickas.",
+      success: null,
+      sentCount: 0,
+    };
+  }
+
+  if (recipients.length === 0) {
+    return {
+      error: "Lägg till minst en mottagande e-postadress.",
+      success: null,
+      sentCount: 0,
+    };
+  }
+
+  if (recipients.some((recipient) => !isValidEmail(recipient))) {
+    return {
+      error: "En eller flera e-postadresser är ogiltiga.",
+      success: null,
+      sentCount: 0,
+    };
+  }
+
+  const current = await readCrmData();
+  const relatedCustomers = current.customers.filter((item) =>
+    customerId ? item.id === customerId : customerIds.includes(item.id),
+  );
+
+  const profile =
+    current.profiles.find((item) => item.userId === userId) ??
+    getDefaultProfile(userId);
+  const signature = getEmailSignature(profile);
+  const normalizedBody = body.trimEnd();
+  const finalBody = normalizedBody.endsWith(signature)
+    ? normalizedBody
+    : `${normalizedBody}\n\n${signature}`;
+  const ownerName =
+    profile.fullName.trim() || relatedCustomers[0]?.owner || "CRM-användare";
+
+  const sendResult = await sendGoogleMailToRecipients({
+    userId,
+    recipients,
+    subject,
+    body: finalBody,
+    senderName: ownerName,
+  });
+
+  if (!sendResult.ok) {
+    return {
+      error: sendResult.message,
+      success: null,
+      sentCount: sendResult.sentCount,
+    };
+  }
+
+  await updateCrmData((latest) => ({
+    ...latest,
+    activities: [
+      ...relatedCustomers.map((relatedCustomer) => ({
+        id: crypto.randomUUID(),
+        title: `Skickat mejlutskick: ${subject}`,
+        type: "E-post" as const,
+        status: "Klar" as const,
+        dueDate: today(),
+        owner: ownerName,
+        relatedType: "customer" as const,
+        relatedId: relatedCustomer.id,
+        notes: `Utskicket skickades till ${sendResult.sentCount} mottagare: ${recipients.join(", ")}`,
+        createdAt: today(),
+      })),
+      ...latest.activities,
+    ],
+  }));
+
+  revalidateCrm();
+  for (const relatedCustomer of relatedCustomers) {
+    revalidateCustomerPath(relatedCustomer.id);
+  }
+
+  return {
+    error: null,
+    success: `Mejlet skickades till ${sendResult.sentCount} mottagare. Varje mottagare fick endast sin egen adress synlig.`,
+    sentCount: sendResult.sentCount,
+  };
 }
 
 export async function updateUserRole(formData: FormData) {
