@@ -123,40 +123,39 @@ export default async function AktiviteterPage() {
         >
           <SurfaceList>
             {sortActivities(calendarData.activities).map((activity) => (
-              <ListItem
-                key={activity.id}
-                tone={activity.status === "Planerad" ? "amber" : "plain"}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-base font-semibold text-black">
-                        {activity.title}
+              <div key={activity.id} id={`activity-${activity.id}`} className="scroll-mt-28">
+                <ListItem tone={activity.status === "Planerad" ? "amber" : "plain"}>
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-base font-semibold text-black">
+                          {activity.title}
+                        </p>
+                        <StatusPill
+                          tone={activity.status === "Klar" ? "green" : "amber"}
+                        >
+                          {activity.status}
+                        </StatusPill>
+                      </div>
+                      <p className="mt-1 text-sm text-black/55">
+                        {activity.type} · {activity.dueDate}
                       </p>
-                      <StatusPill
-                        tone={activity.status === "Klar" ? "green" : "amber"}
-                      >
-                        {activity.status}
-                      </StatusPill>
                     </div>
-                    <p className="mt-1 text-sm text-black/55">
-                      {activity.type} · {activity.dueDate}
-                    </p>
+                    <StatusPill>{getRelatedLabel(activity, calendarData)}</StatusPill>
                   </div>
-                  <StatusPill>{getRelatedLabel(activity, calendarData)}</StatusPill>
-                </div>
-                {activity.notes ? (
-                  <p className="mt-3 text-sm text-black/60">{activity.notes}</p>
-                ) : null}
-                <form action={toggleActivityStatus} className="mt-4">
-                  <input type="hidden" name="activityId" value={activity.id} />
-                  <button className="rounded-full border border-black/10 px-4 py-2 text-sm font-medium text-black transition hover:border-black/20 hover:bg-black/5">
-                    {activity.status === "Planerad"
-                      ? "Markera som klar"
-                      : "Återöppna aktivitet"}
-                  </button>
-                </form>
-              </ListItem>
+                  {activity.notes ? (
+                    <p className="mt-3 text-sm text-black/60">{activity.notes}</p>
+                  ) : null}
+                  <form action={toggleActivityStatus} className="mt-4">
+                    <input type="hidden" name="activityId" value={activity.id} />
+                    <button className="rounded-full border border-black/10 px-4 py-2 text-sm font-medium text-black transition hover:border-black/20 hover:bg-black/5">
+                      {activity.status === "Planerad"
+                        ? "Markera som klar"
+                        : "Återöppna aktivitet"}
+                    </button>
+                  </form>
+                </ListItem>
+              </div>
             ))}
           </SurfaceList>
         </SectionCard>
