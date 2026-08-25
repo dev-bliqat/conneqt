@@ -39,21 +39,36 @@ export function GoogleAccountReauthorize() {
     setError(null);
 
     try {
+      let redirectTarget: URL | null = null;
+
       if (googleAccount) {
-        await googleAccount.reauthorize({
+        const reauthorizedAccount = await googleAccount.reauthorize({
           additionalScopes: [...requestedScopes],
           redirectUrl: callbackUrl,
           oidcPrompt: "consent",
         });
+
+        redirectTarget = reauthorizedAccount.verification?.externalVerificationRedirectURL ?? null;
+      } else {
+        const createdAccount = await user.createExternalAccount({
+          strategy: "oauth_google",
+          redirectUrl: callbackUrl,
+          additionalScopes: [...requestedScopes],
+          oidcPrompt: "consent",
+        });
+
+        redirectTarget = createdAccount.verification?.externalVerificationRedirectURL ?? null;
+      }
+
+      if (!redirectTarget) {
+        setError(
+          "Clerk returnerade ingen redirect för Google-auktorisering. Öppna Connected accounts eller försök igen.",
+        );
+        setIsSubmitting(false);
         return;
       }
 
-      await user.createExternalAccount({
-        strategy: "oauth_google",
-        redirectUrl: callbackUrl,
-        additionalScopes: [...requestedScopes],
-        oidcPrompt: "consent",
-      });
+      window.location.assign(redirectTarget.href);
     } catch (caughtError) {
       const message =
         caughtError instanceof Error ? caughtError.message : "Google-kopplingen kunde inte startas.";
