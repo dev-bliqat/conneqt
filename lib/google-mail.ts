@@ -12,6 +12,9 @@ type GmailSendInput = {
   recipients: string[];
   subject: string;
   body: string;
+  htmlBody?: string;
+  inlineImageDataUrl?: string | null;
+  inlineImageContentId?: string | null;
   senderName: string;
 };
 
@@ -112,22 +115,102 @@ function encodeHeader(value: string) {
   return `=?UTF-8?B?${Buffer.from(value, "utf8").toString("base64")}?=`;
 }
 
+function parseDataUrl(dataUrl: string) {
+  const match = /^data:([^;]+);base64,([\s\S]+)$/.exec(dataUrl);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    mimeType: match[1],
+    base64: match[2].replace(/\s/g, ""),
+  };
+}
+
 function buildRawMessage({
   recipient,
   subject,
   body,
+  htmlBody,
+  inlineImageDataUrl,
+  inlineImageContentId,
   senderName,
   senderEmail,
 }: {
   recipient: string;
   subject: string;
   body: string;
+  htmlBody?: string;
+  inlineImageDataUrl?: string | null;
+  inlineImageContentId?: string | null;
   senderName: string;
   senderEmail: string;
 }) {
   const fromHeader = senderName
     ? `${encodeHeader(senderName)} <${senderEmail}>`
     : senderEmail;
+
+  if (htmlBody) {
+    const image = inlineImageDataUrl ? parseDataUrl(inlineImageDataUrl) : null;
+    const outerBoundary = `mixed_${crypto.randomUUID()}`;
+    const alternativeBoundary = `alt_${crypto.randomUUID()}`;
+    const relatedBoundary = image ? `related_${crypto.randomUUID()}` : null;
+
+    const headers = [
+      `To: ${recipient}`,
+      `From: ${fromHeader}`,
+      `Reply-To: ${senderEmail}`,
+      "MIME-Version: 1.0",
+      `Subject: ${encodeHeader(subject)}`,
+      `Content-Type: multipart/mixed; boundary="${outerBoundary}"`,
+      "",
+      `--${outerBoundary}`,
+      `Content-Type: multipart/alternative; boundary="${alternativeBoundary}"`,
+      "",
+      `--${alternativeBoundary}`,
+      'Content-Type: text/plain; charset="UTF-8"',
+      "Content-Transfer-Encoding: 8bit",
+      "",
+      body,
+      "",
+    ];
+
+    if (image && relatedBoundary && inlineImageContentId) {
+      headers.push(
+        `--${alternativeBoundary}`,
+        `Content-Type: multipart/related; boundary="${relatedBoundary}"`,
+        "",
+        `--${relatedBoundary}`,
+        'Content-Type: text/html; charset="UTF-8"',
+        "Content-Transfer-Encoding: 8bit",
+        "",
+        htmlBody,
+        "",
+        `--${relatedBoundary}`,
+        `Content-Type: ${image.mimeType}`,
+        "Content-Transfer-Encoding: base64",
+        `Content-ID: <${inlineImageContentId}>`,
+        'Content-Disposition: inline; filename="signature-image"',
+        "",
+        image.base64,
+        "",
+        `--${relatedBoundary}--`,
+      );
+    } else {
+      headers.push(
+        `--${alternativeBoundary}`,
+        'Content-Type: text/html; charset="UTF-8"',
+        "Content-Transfer-Encoding: 8bit",
+        "",
+        htmlBody,
+        "",
+      );
+    }
+
+    headers.push(`--${alternativeBoundary}--`, "", `--${outerBoundary}--`);
+    return headers.join("\r\n");
+  }
 
   return [
     `To: ${recipient}`,
@@ -192,6 +275,9 @@ export async function sendGoogleMailToRecipients(
       recipient,
       subject: input.subject,
       body: input.body,
+      htmlBody: input.htmlBody,
+      inlineImageDataUrl: input.inlineImageDataUrl,
+      inlineImageContentId: input.inlineImageContentId,
       senderName: input.senderName,
       senderEmail,
     });

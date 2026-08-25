@@ -117,6 +117,8 @@ export type Profile = {
   focusArea: string;
   bio: string;
   emailSignature: string;
+  emailSignatureLogoDataUrl: string;
+  emailSignatureLogoWidth: number;
   updatedAt: string;
 };
 

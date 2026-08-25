@@ -5,12 +5,17 @@ import {
   FormGrid,
   PageStack,
   SectionCard,
+  Select,
   StatCard,
   SubmitButton,
   Textarea,
 } from "@/components/crm-ui";
 import { sanitizeCrmRole } from "@/lib/crm-users";
-import { getDefaultProfile, readCrmData } from "@/lib/crm-store";
+import {
+  emailSignatureLogoWidthOptions,
+  getDefaultProfile,
+  readCrmData,
+} from "@/lib/crm-store";
 
 export default async function ProfilPage() {
   const { userId } = await auth();
@@ -88,6 +93,50 @@ export default async function ProfilPage() {
               className="min-h-[130px]"
             />
           </div>
+          <div>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-[var(--brand-primary)]/72">
+                Signaturlogga
+              </span>
+              <input
+                type="file"
+                name="emailSignatureLogo"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                className="w-full rounded-2xl bg-white/72 px-4 py-3 text-sm text-[var(--brand-primary)] outline-none shadow-[inset_0_0_0_1px_rgba(58,17,98,0.06)] file:mr-4 file:rounded-full file:border-0 file:bg-[var(--brand-primary)] file:px-4 file:py-2 file:text-sm file:font-medium file:text-white"
+              />
+            </label>
+          </div>
+          <Select
+            label="Loggstorlek"
+            name="emailSignatureLogoWidth"
+            options={emailSignatureLogoWidthOptions.map((size) => `${size}`)}
+            defaultValue={String(profile.emailSignatureLogoWidth)}
+          />
+          <div className="md:col-span-2">
+            <label className="inline-flex items-center gap-3 text-sm text-[var(--brand-primary)]/72">
+              <input
+                type="checkbox"
+                name="removeEmailSignatureLogo"
+                value="yes"
+                className="h-4 w-4 rounded border-[var(--brand-primary)]/20"
+              />
+              Ta bort nuvarande signaturlogga
+            </label>
+          </div>
+          {profile.emailSignatureLogoDataUrl ? (
+            <div className="md:col-span-2">
+              <p className="mb-3 text-sm font-medium text-[var(--brand-primary)]/72">
+                Nuvarande logga
+              </p>
+              <div className="rounded-2xl bg-white/60 px-4 py-4 shadow-[inset_0_0_0_1px_rgba(58,17,98,0.06)]">
+                <img
+                  src={profile.emailSignatureLogoDataUrl}
+                  alt="Nuvarande signaturlogga"
+                  style={{ width: `${profile.emailSignatureLogoWidth}px`, maxWidth: "100%" }}
+                />
+              </div>
+            </div>
+          ) : null}
           <div className="md:col-span-2">
             <SubmitButton>Spara profil</SubmitButton>
           </div>

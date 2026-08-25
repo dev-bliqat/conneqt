@@ -19,6 +19,7 @@ const dataDirectory = path.join(process.cwd(), "data");
 const dataFile = path.join(dataDirectory, "crm.json");
 const stateTable = "crm_state";
 const stateRowId = "default";
+export const emailSignatureLogoWidthOptions = [120, 180, 240, 320] as const;
 
 const seedData: CrmData = {
   leads: [
@@ -175,6 +176,12 @@ function normalizeCrmData(parsed: CrmData): CrmData {
       ...getDefaultProfile(profile.userId),
       ...profile,
       emailSignature: profile.emailSignature ?? "",
+      emailSignatureLogoDataUrl: profile.emailSignatureLogoDataUrl ?? "",
+      emailSignatureLogoWidth: emailSignatureLogoWidthOptions.includes(
+        profile.emailSignatureLogoWidth as (typeof emailSignatureLogoWidthOptions)[number],
+      )
+        ? profile.emailSignatureLogoWidth
+        : 180,
       updatedAt: profile.updatedAt ?? new Date().toISOString(),
     })),
   };
@@ -313,6 +320,8 @@ export function getDefaultProfile(userId: string): Profile {
     focusArea: "Prioritera varma leads och skapa struktur i pipeline.",
     bio: "",
     emailSignature: "",
+    emailSignatureLogoDataUrl: "",
+    emailSignatureLogoWidth: 180,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -329,6 +338,36 @@ export function getEmailSignature(profile: Pick<Profile, "fullName" | "emailSign
     name,
     "Bliqat",
   ].join("\n");
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+export function getEmailHtmlFromText(value: string) {
+  return escapeHtml(value).replace(/\n/g, "<br />");
+}
+
+export function getEmailSignatureHtml(
+  profile: Pick<
+    Profile,
+    "fullName" | "emailSignature" | "emailSignatureLogoDataUrl" | "emailSignatureLogoWidth"
+  >,
+  imageCid?: string,
+) {
+  const signatureText = getEmailSignature(profile);
+  const signatureLines = getEmailHtmlFromText(signatureText);
+  const logoMarkup =
+    profile.emailSignatureLogoDataUrl && imageCid
+      ? `<div style="margin-top:12px;"><img src="cid:${imageCid}" alt="Signaturlogga" style="display:block;width:${profile.emailSignatureLogoWidth}px;max-width:100%;height:auto;border:0;" /></div>`
+      : "";
+
+  return `<div>${signatureLines}${logoMarkup}</div>`;
 }
 
 export function formatCurrency(value: number) {

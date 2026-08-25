@@ -4,6 +4,8 @@ import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import {
   getDefaultProfile,
+  getEmailHtmlFromText,
+  getEmailSignatureHtml,
   getNextDealStage,
   getNextLeadStatus,
   sanitizeActivityType,
@@ -42,6 +44,12 @@ const crmPaths = [
   "/profil",
   "/admin",
 ];
+const allowedSignatureLogoMimeTypes = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+]);
 
 function revalidateCrm() {
   for (const path of crmPaths) {
@@ -100,6 +108,16 @@ function parseIdList(value: string) {
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function sanitizeEmailSignatureLogoWidth(value: string) {
+  const parsed = Number(value);
+  return [120, 180, 240, 320].includes(parsed) ? parsed : 180;
+}
+
+async function fileToDataUrl(file: File) {
+  const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
+  return `data:${file.type};base64,${base64}`;
 }
 
 function sanitizeCustomerStatus(value: string) {
@@ -840,6 +858,24 @@ export async function toggleActivityStatus(formData: FormData) {
 
 export async function updateProfile(formData: FormData) {
   const userId = await requireUser();
+  const uploadedLogo = formData.get("emailSignatureLogo");
+  const removeLogo = asString(formData, "removeEmailSignatureLogo") === "yes";
+  const nextLogoWidth = sanitizeEmailSignatureLogoWidth(
+    asString(formData, "emailSignatureLogoWidth"),
+  );
+  let uploadedLogoDataUrl: string | null = null;
+
+  if (uploadedLogo instanceof File && uploadedLogo.size > 0) {
+    if (!allowedSignatureLogoMimeTypes.has(uploadedLogo.type)) {
+      throw new Error("Signaturloggan måste vara PNG, JPG, WEBP eller GIF.");
+    }
+
+    if (uploadedLogo.size > 1024 * 1024) {
+      throw new Error("Signaturloggan får vara högst 1 MB.");
+    }
+
+    uploadedLogoDataUrl = await fileToDataUrl(uploadedLogo);
+  }
 
   await updateCrmData((current) => {
     const existing = current.profiles.find((item) => item.userId === userId);
@@ -851,6 +887,10 @@ export async function updateProfile(formData: FormData) {
       focusArea: asString(formData, "focusArea"),
       bio: asString(formData, "bio"),
       emailSignature: asString(formData, "emailSignature"),
+      emailSignatureLogoDataUrl: removeLogo
+        ? ""
+        : uploadedLogoDataUrl ?? existing?.emailSignatureLogoDataUrl ?? "",
+      emailSignatureLogoWidth: nextLogoWidth,
       updatedAt: new Date().toISOString(),
     };
 
@@ -927,6 +967,10 @@ export async function sendBulkCustomerEmail(
   const finalBody = normalizedBody.endsWith(signature)
     ? normalizedBody
     : `${normalizedBody}\n\n${signature}`;
+  const finalHtmlBody = `${getEmailHtmlFromText(normalizedBody)}<br /><br />${getEmailSignatureHtml(
+    profile,
+    profile.emailSignatureLogoDataUrl ? "signature-logo" : undefined,
+  )}`;
   const ownerName =
     profile.fullName.trim() || relatedCustomers[0]?.owner || "CRM-användare";
 
@@ -935,6 +979,9 @@ export async function sendBulkCustomerEmail(
     recipients,
     subject,
     body: finalBody,
+    htmlBody: finalHtmlBody,
+    inlineImageDataUrl: profile.emailSignatureLogoDataUrl || null,
+    inlineImageContentId: profile.emailSignatureLogoDataUrl ? "signature-logo" : null,
     senderName: ownerName,
   });
 
