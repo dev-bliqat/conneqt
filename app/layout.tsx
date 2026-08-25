@@ -4,10 +4,10 @@ import {
   Show,
   SignInButton,
   SignUpButton,
-  UserButton,
 } from "@clerk/nextjs";
 import Image from "next/image";
 import Link from "next/link";
+import { ClerkUserAccountButton } from "@/components/clerk-user-account-button";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { GOOGLE_CALENDAR_SCOPE } from "@/lib/google-calendar-shared";
 import { GOOGLE_GMAIL_SEND_SCOPE } from "@/lib/google-mail-shared";
@@ -75,15 +75,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                     >
                       Ny kund
                     </Link>
-                    <UserButton
-                      userProfileMode="navigation"
-                      userProfileUrl="/user-profile"
-                      userProfileProps={{
-                        additionalOAuthScopes: {
-                          google: [GOOGLE_CALENDAR_SCOPE, GOOGLE_GMAIL_SEND_SCOPE],
-                        },
-                      }}
-                    />
+                    <ClerkUserAccountButton />
                   </Show>
                 </div>
               </div>
