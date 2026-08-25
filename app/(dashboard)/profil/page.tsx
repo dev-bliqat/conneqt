@@ -5,14 +5,12 @@ import {
   FormGrid,
   PageStack,
   SectionCard,
-  Select,
   StatCard,
   SubmitButton,
   Textarea,
 } from "@/components/crm-ui";
 import { sanitizeCrmRole } from "@/lib/crm-users";
 import {
-  emailSignatureLogoPlacementOptions,
   emailSignatureLogoWidthOptions,
   getDefaultProfile,
   readCrmData,
@@ -89,10 +87,14 @@ export default async function ProfilPage() {
               label="E-postsignatur"
               name="emailSignature"
               defaultValue={profile.emailSignature}
-              placeholder={"Med vanliga halsningar,\nJosef Handel\nBliqat"}
-              rows={5}
-              className="min-h-[130px]"
+              placeholder={"Med vanliga hälsningar,\nJosef Handel\n{bild}\nBliqat"}
+              rows={6}
+              className="min-h-[150px]"
             />
+            <p className="mt-2 text-xs text-[var(--brand-primary)]/58">
+              Skriv <code>{"{bild}"}</code> där loggan ska visas i signaturen. Om taggen saknas
+              läggs loggan längst ned automatiskt.
+            </p>
           </div>
           <div>
             <label className="block">
@@ -107,24 +109,18 @@ export default async function ProfilPage() {
               />
             </label>
           </div>
-          <Select
-            label="Loggstorlek"
-            name="emailSignatureLogoWidth"
-            options={emailSignatureLogoWidthOptions.map((size) => `${size}`)}
-            defaultValue={String(profile.emailSignatureLogoWidth)}
-          />
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-[var(--brand-primary)]/72">
-              Placering av logga
+              Loggstorlek
             </span>
             <select
-              name="emailSignatureLogoPlacement"
-              defaultValue={profile.emailSignatureLogoPlacement}
+              name="emailSignatureLogoWidth"
+              defaultValue={String(profile.emailSignatureLogoWidth)}
               className="w-full rounded-2xl bg-white/72 px-4 py-3 text-sm text-[var(--brand-primary)] outline-none shadow-[inset_0_0_0_1px_rgba(58,17,98,0.06)] transition focus:bg-white focus:shadow-[inset_0_0_0_1.5px_rgba(233,87,59,0.45)]"
             >
-              {emailSignatureLogoPlacementOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
+              {emailSignatureLogoWidthOptions.map((size) => (
+                <option key={size} value={size}>
+                  {size}
                 </option>
               ))}
             </select>
@@ -151,14 +147,6 @@ export default async function ProfilPage() {
                   alt="Nuvarande signaturlogga"
                   style={{ width: `${profile.emailSignatureLogoWidth}px`, maxWidth: "100%" }}
                 />
-                <p className="mt-3 text-sm text-[var(--brand-primary)]/60">
-                  Placering:{" "}
-                  {
-                    emailSignatureLogoPlacementOptions.find(
-                      (option) => option.value === profile.emailSignatureLogoPlacement,
-                    )?.label
-                  }
-                </p>
               </div>
             </div>
           ) : null}

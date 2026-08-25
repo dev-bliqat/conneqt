@@ -119,7 +119,6 @@ export type Profile = {
   emailSignature: string;
   emailSignatureLogoDataUrl: string;
   emailSignatureLogoWidth: number;
-  emailSignatureLogoPlacement: "above" | "below" | "left" | "right";
   updatedAt: string;
 };
 

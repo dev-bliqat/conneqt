@@ -50,7 +50,6 @@ const allowedSignatureLogoMimeTypes = new Set([
   "image/webp",
   "image/gif",
 ]);
-const allowedSignatureLogoPlacements = new Set(["above", "below", "left", "right"]);
 
 function revalidateCrm() {
   for (const path of crmPaths) {
@@ -114,12 +113,6 @@ function isValidEmail(value: string) {
 function sanitizeEmailSignatureLogoWidth(value: string) {
   const parsed = Number(value);
   return [120, 180, 240, 320].includes(parsed) ? parsed : 180;
-}
-
-function sanitizeEmailSignatureLogoPlacement(value: string) {
-  return allowedSignatureLogoPlacements.has(value)
-    ? (value as "above" | "below" | "left" | "right")
-    : "below";
 }
 
 async function fileToDataUrl(file: File) {
@@ -870,9 +863,6 @@ export async function updateProfile(formData: FormData) {
   const nextLogoWidth = sanitizeEmailSignatureLogoWidth(
     asString(formData, "emailSignatureLogoWidth"),
   );
-  const nextLogoPlacement = sanitizeEmailSignatureLogoPlacement(
-    asString(formData, "emailSignatureLogoPlacement"),
-  );
   let uploadedLogoDataUrl: string | null = null;
 
   if (uploadedLogo instanceof File && uploadedLogo.size > 0) {
@@ -901,7 +891,6 @@ export async function updateProfile(formData: FormData) {
         ? ""
         : uploadedLogoDataUrl ?? existing?.emailSignatureLogoDataUrl ?? "",
       emailSignatureLogoWidth: nextLogoWidth,
-      emailSignatureLogoPlacement: nextLogoPlacement,
       updatedAt: new Date().toISOString(),
     };
 
