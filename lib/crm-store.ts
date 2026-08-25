@@ -20,6 +20,12 @@ const dataFile = path.join(dataDirectory, "crm.json");
 const stateTable = "crm_state";
 const stateRowId = "default";
 export const emailSignatureLogoWidthOptions = [120, 180, 240, 320] as const;
+export const emailSignatureLogoPlacementOptions = [
+  { value: "above", label: "Ovanför texten" },
+  { value: "below", label: "Under texten" },
+  { value: "left", label: "Till vänster om texten" },
+  { value: "right", label: "Till höger om texten" },
+] as const;
 
 const seedData: CrmData = {
   leads: [
@@ -182,6 +188,11 @@ function normalizeCrmData(parsed: CrmData): CrmData {
       )
         ? profile.emailSignatureLogoWidth
         : 180,
+      emailSignatureLogoPlacement: emailSignatureLogoPlacementOptions.some(
+        (option) => option.value === profile.emailSignatureLogoPlacement,
+      )
+        ? profile.emailSignatureLogoPlacement
+        : "below",
       updatedAt: profile.updatedAt ?? new Date().toISOString(),
     })),
   };
@@ -322,6 +333,7 @@ export function getDefaultProfile(userId: string): Profile {
     emailSignature: "",
     emailSignatureLogoDataUrl: "",
     emailSignatureLogoWidth: 180,
+    emailSignatureLogoPlacement: "below",
     updatedAt: new Date().toISOString(),
   };
 }
@@ -356,18 +368,37 @@ export function getEmailHtmlFromText(value: string) {
 export function getEmailSignatureHtml(
   profile: Pick<
     Profile,
-    "fullName" | "emailSignature" | "emailSignatureLogoDataUrl" | "emailSignatureLogoWidth"
+    | "fullName"
+    | "emailSignature"
+    | "emailSignatureLogoDataUrl"
+    | "emailSignatureLogoWidth"
+    | "emailSignatureLogoPlacement"
   >,
   imageCid?: string,
 ) {
   const signatureText = getEmailSignature(profile);
   const signatureLines = getEmailHtmlFromText(signatureText);
-  const logoMarkup =
-    profile.emailSignatureLogoDataUrl && imageCid
-      ? `<div style="margin-top:12px;"><img src="cid:${imageCid}" alt="Signaturlogga" style="display:block;width:${profile.emailSignatureLogoWidth}px;max-width:100%;height:auto;border:0;" /></div>`
-      : "";
+  const textMarkup = `<div>${signatureLines}</div>`;
 
-  return `<div>${signatureLines}${logoMarkup}</div>`;
+  if (!profile.emailSignatureLogoDataUrl || !imageCid) {
+    return textMarkup;
+  }
+
+  const logoMarkup = `<img src="cid:${imageCid}" alt="Signaturlogga" style="display:block;width:${profile.emailSignatureLogoWidth}px;max-width:100%;height:auto;border:0;" />`;
+
+  if (profile.emailSignatureLogoPlacement === "above") {
+    return `<div><div style="margin-bottom:12px;">${logoMarkup}</div>${textMarkup}</div>`;
+  }
+
+  if (profile.emailSignatureLogoPlacement === "left") {
+    return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right:14px;vertical-align:top;">${logoMarkup}</td><td style="vertical-align:top;">${textMarkup}</td></tr></table>`;
+  }
+
+  if (profile.emailSignatureLogoPlacement === "right") {
+    return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right:14px;vertical-align:top;">${textMarkup}</td><td style="vertical-align:top;">${logoMarkup}</td></tr></table>`;
+  }
+
+  return `<div>${textMarkup}<div style="margin-top:12px;">${logoMarkup}</div></div>`;
 }
 
 export function formatCurrency(value: number) {
