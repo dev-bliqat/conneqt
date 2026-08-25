@@ -874,13 +874,21 @@ export async function sendBulkCustomerEmail(
   const customerIds = parseIdList(asString(formData, "customerIds"));
   const subject = asString(formData, "subject");
   const body = asString(formData, "body");
-  const recipients = parseRecipientList(asString(formData, "recipients"));
+  const retryMode = asString(formData, "retryMode");
+  const recipients = parseRecipientList(
+    retryMode === "failed-only"
+      ? asString(formData, "retryRecipients")
+      : asString(formData, "recipients"),
+  );
 
   if (!subject || !body) {
     return {
       error: "Ämne och meddelande måste fyllas i innan utskicket kan skickas.",
       success: null,
       sentCount: 0,
+      failedCount: 0,
+      recipientStatuses: [],
+      failedRecipients: [],
     };
   }
 
@@ -889,6 +897,9 @@ export async function sendBulkCustomerEmail(
       error: "Lägg till minst en mottagande e-postadress.",
       success: null,
       sentCount: 0,
+      failedCount: 0,
+      recipientStatuses: [],
+      failedRecipients: [],
     };
   }
 
@@ -897,6 +908,9 @@ export async function sendBulkCustomerEmail(
       error: "En eller flera e-postadresser är ogiltiga.",
       success: null,
       sentCount: 0,
+      failedCount: 0,
+      recipientStatuses: [],
+      failedRecipients: [],
     };
   }
 
@@ -925,10 +939,47 @@ export async function sendBulkCustomerEmail(
   });
 
   if (!sendResult.ok) {
+    if (sendResult.sentCount > 0) {
+      await updateCrmData((latest) => ({
+        ...latest,
+        activities: [
+          ...relatedCustomers.map((relatedCustomer) => ({
+            id: crypto.randomUUID(),
+            title: `Skickat mejlutskick: ${subject}`,
+            type: "E-post" as const,
+            status: "Klar" as const,
+            dueDate: today(),
+            owner: ownerName,
+            relatedType: "customer" as const,
+            relatedId: relatedCustomer.id,
+            notes: `${sendResult.sentCount} mejl skickades och ${sendResult.failedCount} misslyckades. Mottagare: ${recipients.join(", ")}`,
+            createdAt: today(),
+          })),
+          ...latest.activities,
+        ],
+      }));
+
+      revalidateCrm();
+      for (const relatedCustomer of relatedCustomers) {
+        revalidateCustomerPath(relatedCustomer.id);
+      }
+    }
+
     return {
-      error: sendResult.message,
-      success: null,
+      error:
+        sendResult.failedCount > 0
+          ? `${sendResult.message} Använd knappen nedan för att försöka igen med de misslyckade adresserna.`
+          : sendResult.message,
+      success:
+        sendResult.sentCount > 0
+          ? `${sendResult.sentCount} mejl skickades innan körningen avslutades.`
+          : null,
       sentCount: sendResult.sentCount,
+      failedCount: sendResult.failedCount,
+      recipientStatuses: sendResult.results,
+      failedRecipients: sendResult.results
+        .filter((result) => !result.ok)
+        .map((result) => result.recipient),
     };
   }
 
@@ -960,6 +1011,9 @@ export async function sendBulkCustomerEmail(
     error: null,
     success: `Mejlet skickades till ${sendResult.sentCount} mottagare. Varje mottagare fick endast sin egen adress synlig.`,
     sentCount: sendResult.sentCount,
+    failedCount: 0,
+    recipientStatuses: sendResult.results,
+    failedRecipients: [],
   };
 }
 

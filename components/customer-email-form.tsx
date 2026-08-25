@@ -32,6 +32,7 @@ export function CustomerEmailForm({
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="recipients" value={manualRecipients} />
+      <input type="hidden" name="retryRecipients" value={state.failedRecipients.join("\n")} />
 
       <label className="block">
         <span className="mb-2 block text-sm font-medium text-[var(--brand-primary)]/72">
@@ -83,6 +84,59 @@ export function CustomerEmailForm({
       {state.success ? (
         <div className="rounded-2xl bg-[#edf8ee] px-4 py-3 text-sm text-[#2d6a33]">
           {state.success}
+        </div>
+      ) : null}
+
+      {state.recipientStatuses.length > 0 ? (
+        <div className="space-y-3 border-t border-[var(--brand-primary)]/10 pt-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-[var(--brand-primary)]">
+                Status för utskick
+              </p>
+              <p className="mt-1 text-sm text-[var(--brand-primary)]/62">
+                {state.sentCount} skickade · {state.failedCount} misslyckade
+              </p>
+            </div>
+
+            {state.failedRecipients.length > 0 ? (
+              <button
+                type="submit"
+                name="retryMode"
+                value="failed-only"
+                className="rounded-full border border-[var(--brand-primary)]/14 px-4 py-2 text-sm font-medium text-[var(--brand-primary)] transition hover:bg-white/70"
+              >
+                Försök igen med misslyckade
+              </button>
+            ) : null}
+          </div>
+
+          <div className="space-y-2">
+            {state.recipientStatuses.map((item) => (
+              <div
+                key={item.recipient}
+                className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--brand-primary)]/8 py-3 last:border-b-0"
+              >
+                <div>
+                  <p className="text-sm font-medium text-[var(--brand-primary)]">
+                    {item.recipient}
+                  </p>
+                  {item.message ? (
+                    <p className="mt-1 text-xs text-[var(--brand-primary)]/55">{item.message}</p>
+                  ) : null}
+                </div>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    item.ok
+                      ? "bg-[#edf8ee] text-[#2d6a33]"
+                      : "bg-[#fff2f2] text-[#a43b3b]"
+                  }`}
+                >
+                  {item.ok ? "Skickat" : "Misslyckades"}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       ) : null}
 

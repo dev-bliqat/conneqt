@@ -1,6 +1,12 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { GOOGLE_GMAIL_SEND_SCOPE } from "@/lib/google-mail-shared";
 
+export type GmailRecipientResult = {
+  recipient: string;
+  ok: boolean;
+  message: string | null;
+};
+
 type GmailSendInput = {
   userId: string;
   recipients: string[];
@@ -13,11 +19,15 @@ type GmailSendResult =
   | {
       ok: true;
       sentCount: number;
+      failedCount: number;
+      results: GmailRecipientResult[];
     }
   | {
       ok: false;
       sentCount: number;
+      failedCount: number;
       message: string;
+      results: GmailRecipientResult[];
     };
 
 function extractGoogleErrorMessage(payload: unknown) {
@@ -138,10 +148,18 @@ export async function sendGoogleMailToRecipients(
   const access = await getGoogleMailAccessTokenForUser(input.userId);
 
   if (!access.ok) {
+    const results = input.recipients.map((recipient) => ({
+      recipient,
+      ok: false,
+      message: access.message,
+    }));
+
     return {
       ok: false,
       sentCount: 0,
+      failedCount: results.length,
       message: access.message,
+      results,
     };
   }
 
@@ -151,14 +169,23 @@ export async function sendGoogleMailToRecipients(
     user.primaryEmailAddress?.emailAddress ?? user.emailAddresses[0]?.emailAddress ?? "";
 
   if (!senderEmail) {
+    const results = input.recipients.map((recipient) => ({
+      recipient,
+      ok: false,
+      message: "Det gick inte att hitta avsändaradressen för den inloggade användaren.",
+    }));
+
     return {
       ok: false,
       sentCount: 0,
+      failedCount: results.length,
       message: "Det gick inte att hitta avsändaradressen för den inloggade användaren.",
+      results,
     };
   }
 
   let sentCount = 0;
+  const results: GmailRecipientResult[] = [];
 
   for (const recipient of input.recipients) {
     const rawMessage = buildRawMessage({
@@ -205,21 +232,44 @@ export async function sendGoogleMailToRecipients(
         responseMessage,
       });
 
-      return {
+      results.push({
+        recipient,
         ok: false,
-        sentCount,
         message:
-          sentCount > 0
-            ? `Utskicket avbröts efter ${sentCount} skickade mejl.${responseMessage ? ` Google svarade: ${responseMessage}` : ""}`
-            : `Mejlet kunde inte skickas just nu.${responseMessage ? ` Google svarade: ${responseMessage}` : " Kontrollera Gmail-behörigheten och försök igen."}`,
-      };
+          responseMessage ||
+          "Mejlet kunde inte skickas just nu. Kontrollera Gmail-behörigheten och försök igen.",
+      });
+
+      continue;
     }
 
     sentCount += 1;
+    results.push({
+      recipient,
+      ok: true,
+      message: null,
+    });
+  }
+
+  const failedCount = results.length - sentCount;
+
+  if (failedCount > 0) {
+    return {
+      ok: false,
+      sentCount,
+      failedCount,
+      results,
+      message:
+        sentCount > 0
+          ? `${failedCount} av ${results.length} mejl misslyckades.`
+          : `Inga mejl kunde skickas av ${results.length} försök.`,
+    };
   }
 
   return {
     ok: true,
     sentCount,
+    failedCount: 0,
+    results,
   };
 }
