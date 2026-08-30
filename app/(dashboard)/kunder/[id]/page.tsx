@@ -62,7 +62,7 @@ export default async function CustomerDetailPage({
         </StatusPill>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <StatCard
           label="Ansvarig"
           value={customer.owner || "Ej satt"}
@@ -80,6 +80,16 @@ export default async function CustomerDetailPage({
           value={wonValue}
           hint={customer.wonAt ? `Vunnen ${customer.wonAt}` : "Inte markerad som vunnen"}
           accent="dark"
+        />
+        <StatCard
+          label="Aktiv kund"
+          value={customer.isActive ? "Ja" : "Nej"}
+          hint={
+            customer.isActive
+              ? "Denna kund blockeras från nya mailutskick."
+              : "Kan fortfarande inkluderas i mailutskick."
+          }
+          accent="soft"
         />
         <StatCard
           label="Affärer"

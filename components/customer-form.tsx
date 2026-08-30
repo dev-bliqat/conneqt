@@ -58,6 +58,15 @@ export function CustomerForm({
           defaultValue={customer?.city}
         />
         <OwnerSelect options={ownerOptions} defaultValue={customer?.owner} />
+        <label className="flex items-center gap-3 rounded-2xl border border-[var(--brand-primary)]/10 bg-[var(--brand-lilac)]/10 px-4 py-3 text-sm text-[var(--brand-primary)]/72">
+          <input
+            type="checkbox"
+            name="isActive"
+            defaultChecked={customer?.isActive ?? false}
+            className="h-4 w-4"
+          />
+          Markera kunden som aktiv
+        </label>
         <div className="md:col-span-2">
           <Textarea
             label="Statusanteckningar"

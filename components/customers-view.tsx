@@ -229,6 +229,9 @@ export function CustomersView({
                           <StatusPill tone={getCustomerStatusTone(customer.status)}>
                             {customer.status || "Ingen status"}
                           </StatusPill>
+                          {customer.isActive ? (
+                            <StatusPill tone="green">Aktiv</StatusPill>
+                          ) : null}
                           <StatusPill>{`${relatedDeals.length} affärer`}</StatusPill>
                         </div>
                       </div>

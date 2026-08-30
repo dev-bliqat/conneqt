@@ -110,6 +110,10 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
 function sanitizeEmailSignatureLogoWidth(value: string) {
   const parsed = Number(value);
   return [120, 180, 240, 320].includes(parsed) ? parsed : 180;
@@ -326,6 +330,7 @@ export async function convertLeadToCustomer(formData: FormData) {
         email: lead.email,
         phone: lead.phone,
         segment: "Ny kund",
+        isActive: false,
         status: "Ska boka nytt möte",
         statusNotes: "Konverterad från lead och redo för första kunduppföljning.",
         city: "",
@@ -379,13 +384,16 @@ export async function createCustomer(formData: FormData) {
   const owner = await sanitizeOwnerSelection(asString(formData, "owner"), userId);
 
   const customer: Customer = {
+    status: sanitizeCustomerStatus(asString(formData, "status")),
     id: crypto.randomUUID(),
     name: asString(formData, "name"),
     company: asString(formData, "company"),
     email: asString(formData, "email"),
     phone: asString(formData, "phone"),
     segment: asString(formData, "segment") || "Tillväxt",
-    status: sanitizeCustomerStatus(asString(formData, "status")),
+    isActive:
+      formData.get("isActive") === "on" ||
+      sanitizeCustomerStatus(asString(formData, "status")) === "Betalande kund",
     statusNotes: asString(formData, "statusNotes"),
     city: asString(formData, "city"),
     notes: asString(formData, "notes"),
@@ -555,6 +563,7 @@ export async function importCustomersFromCsv(
         phone: getValue(row, "phone"),
         segment: getValue(row, "segment") || "Tillväxt",
         status: sanitizeImportedCustomerStatus(getValue(row, "status")),
+        isActive: sanitizeImportedCustomerStatus(getValue(row, "status")) === "Betalande kund",
         statusNotes: getValue(row, "statusNotes"),
         city: getValue(row, "city"),
         notes: getValue(row, "notes"),
@@ -613,6 +622,7 @@ export async function updateCustomer(formData: FormData) {
   const owner = await sanitizeOwnerSelection(asString(formData, "owner"), userId);
   const markFollowUpComplete = formData.get("markFollowUpComplete") === "on";
   const markWon = formData.get("markWon") === "on";
+  const markActive = formData.get("isActive") === "on";
   const wonValue = asNumber(formData, "wonValue");
 
   if (!customerId) {
@@ -646,6 +656,7 @@ export async function updateCustomer(formData: FormData) {
       phone: asString(formData, "phone"),
       segment: asString(formData, "segment") || existingCustomer.segment,
       status: nextStatus,
+      isActive: markWon || nextStatus === "Betalande kund" ? true : markActive,
       statusNotes: asString(formData, "statusNotes"),
       city: asString(formData, "city"),
       notes: asString(formData, "notes"),
@@ -915,7 +926,7 @@ export async function sendBulkCustomerEmail(
   const subject = asString(formData, "subject");
   const body = asString(formData, "body");
   const retryMode = asString(formData, "retryMode");
-  const recipients = parseRecipientList(
+  const requestedRecipients = parseRecipientList(
     retryMode === "failed-only"
       ? asString(formData, "retryRecipients")
       : asString(formData, "recipients"),
@@ -927,37 +938,71 @@ export async function sendBulkCustomerEmail(
       success: null,
       sentCount: 0,
       failedCount: 0,
+      ignoredCount: 0,
       recipientStatuses: [],
       failedRecipients: [],
+      ignoredActiveRecipients: [],
     };
   }
 
-  if (recipients.length === 0) {
+  if (requestedRecipients.length === 0) {
     return {
       error: "Lägg till minst en mottagande e-postadress.",
       success: null,
       sentCount: 0,
       failedCount: 0,
+      ignoredCount: 0,
       recipientStatuses: [],
       failedRecipients: [],
+      ignoredActiveRecipients: [],
     };
   }
 
-  if (recipients.some((recipient) => !isValidEmail(recipient))) {
+  if (requestedRecipients.some((recipient) => !isValidEmail(recipient))) {
     return {
       error: "En eller flera e-postadresser är ogiltiga.",
       success: null,
       sentCount: 0,
       failedCount: 0,
+      ignoredCount: 0,
       recipientStatuses: [],
       failedRecipients: [],
+      ignoredActiveRecipients: [],
     };
   }
 
   const current = await readCrmData();
+  const activeCustomerEmails = new Set(
+    current.customers
+      .filter((customer) => customer.isActive)
+      .map((customer) => normalizeEmail(customer.email))
+      .filter(Boolean),
+  );
+  const ignoredActiveRecipients = requestedRecipients.filter((recipient) =>
+    activeCustomerEmails.has(normalizeEmail(recipient)),
+  );
+  const recipients = requestedRecipients.filter(
+    (recipient) => !activeCustomerEmails.has(normalizeEmail(recipient)),
+  );
   const relatedCustomers = current.customers.filter((item) =>
     customerId ? item.id === customerId : customerIds.includes(item.id),
   );
+
+  if (recipients.length === 0) {
+    return {
+      error: null,
+      success:
+        ignoredActiveRecipients.length > 0
+          ? "Inga mejl skickades eftersom samtliga adresser redan tillhör aktiva kunder."
+          : null,
+      sentCount: 0,
+      failedCount: 0,
+      ignoredCount: ignoredActiveRecipients.length,
+      recipientStatuses: [],
+      failedRecipients: [],
+      ignoredActiveRecipients,
+    };
+  }
 
   const profile =
     current.profiles.find((item) => item.userId === userId) ??
@@ -999,7 +1044,7 @@ export async function sendBulkCustomerEmail(
             owner: ownerName,
             relatedType: "customer" as const,
             relatedId: relatedCustomer.id,
-            notes: `${sendResult.sentCount} mejl skickades och ${sendResult.failedCount} misslyckades. Mottagare: ${recipients.join(", ")}`,
+            notes: `${sendResult.sentCount} mejl skickades, ${sendResult.failedCount} misslyckades och ${ignoredActiveRecipients.length} ignorerades. Mottagare: ${requestedRecipients.join(", ")}`,
             createdAt: today(),
           })),
           ...latest.activities,
@@ -1023,10 +1068,12 @@ export async function sendBulkCustomerEmail(
           : null,
       sentCount: sendResult.sentCount,
       failedCount: sendResult.failedCount,
+      ignoredCount: ignoredActiveRecipients.length,
       recipientStatuses: sendResult.results,
       failedRecipients: sendResult.results
         .filter((result) => !result.ok)
         .map((result) => result.recipient),
+      ignoredActiveRecipients,
     };
   }
 
@@ -1059,8 +1106,10 @@ export async function sendBulkCustomerEmail(
     success: `Mejlet skickades till ${sendResult.sentCount} mottagare. Varje mottagare fick endast sin egen adress synlig.`,
     sentCount: sendResult.sentCount,
     failedCount: 0,
+    ignoredCount: ignoredActiveRecipients.length,
     recipientStatuses: sendResult.results,
     failedRecipients: [],
+    ignoredActiveRecipients,
   };
 }
 

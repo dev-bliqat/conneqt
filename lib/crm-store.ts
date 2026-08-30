@@ -60,6 +60,7 @@ const seedData: CrmData = {
       email: "sara@aurora.studio",
       phone: "+46 76 800 19 11",
       segment: "Tillväxt",
+      isActive: false,
       status: "Konto skapat",
       statusNotes: "Bra momentum och positiv återkoppling från senaste avstämningen.",
       city: "Stockholm",
@@ -146,6 +147,7 @@ function normalizeCrmData(parsed: CrmData): CrmData {
     ...parsed,
     customers: parsed.customers.map((customer) => ({
       ...customer,
+      isActive: customer.isActive ?? customer.status === "Betalande kund",
       status:
         customer.status === ""
           ? ""

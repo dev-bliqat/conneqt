@@ -50,6 +50,7 @@ export type Customer = {
   email: string;
   phone: string;
   segment: string;
+  isActive: boolean;
   status: CustomerStatus | "";
   statusNotes: string;
   city: string;

@@ -9,8 +9,10 @@ export type CustomerEmailState = {
   success: string | null;
   sentCount: number;
   failedCount: number;
+  ignoredCount: number;
   recipientStatuses: CustomerEmailRecipientStatus[];
   failedRecipients: string[];
+  ignoredActiveRecipients: string[];
 };
 
 export const initialCustomerEmailState: CustomerEmailState = {
@@ -18,6 +20,8 @@ export const initialCustomerEmailState: CustomerEmailState = {
   success: null,
   sentCount: 0,
   failedCount: 0,
+  ignoredCount: 0,
   recipientStatuses: [],
   failedRecipients: [],
+  ignoredActiveRecipients: [],
 };
